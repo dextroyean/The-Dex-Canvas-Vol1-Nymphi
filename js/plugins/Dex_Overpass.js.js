@@ -1,150 +1,275 @@
 /*:
- * @target MZ MV
- * @plugindesc [v2.0.0] Sistema de Control de 4 Zonas para "The Dex Canvas"
- * @author The Dex Canvas Team & Gemini
+ * @target MZ
+ * @plugindesc Dex_Overpass v2.2 - Puentes, pasos bajos y caminos secretos por regiones para Tales of Dex.
+ * @author Dex Team
  *
- * @param Zona Entrada
+ * @param RegionBajo
+ * @text Región Bajo / Entrada secreta
  * @type number
- * @default 255
- * @desc ID de Región o Terrain Tag para las rampas de entrada (Activa Nivel 1).
+ * @default 251
  *
- * @param Zona Camino
- * @type number
- * @default 254
- * @desc ID de Región o Terrain Tag para el cuerpo del puente/camino secreto.
- *
- * @param Zona Paso Inferior
- * @type number
- * @default 253
- * @desc ID de Región o Terrain Tag para pasar por debajo (Pared si estás arriba).
- *
- * @param Zona Bloqueo Total
+ * @param RegionAlto
+ * @text Región Alto
  * @type number
  * @default 252
- * @desc ID de Región o Terrain Tag para denegar el paso por completo.
+ *
+ * @param RegionPuente
+ * @text Región Puente / Camino secreto
+ * @type number
+ * @default 253
+ *
+ * @param RegionBloqueo
+ * @text Región Bloqueo Total
+ * @type number
+ * @default 254
+ *
+ * @param RegionBloqueoAltoBajo
+ * @text Región Bloqueo Alto/Bajo
+ * @type number
+ * @default 255
+ *
+ * @param PermitirPuenteBloqueado
+ * @text Permitir Puente/Camino aunque el tile bloquee
+ * @type boolean
+ * @default true
+ * @desc Si está ON, la región puente/camino secreto permite caminar aunque el tile tenga X.
+ *
+ * @param ModoDebug
+ * @text Modo Debug
+ * @type boolean
+ * @default false
+ *
+ * @help
+ * Dex_Overpass v2.2
+ * ----------------------------------------------------------------------------
+ * 251 = Camino bajo / entrada a camino secreto. Activa modo debajo.
+ * 252 = Camino alto. Activa modo encima.
+ * 253 = Puente / camino secreto. Mantiene el modo actual.
+ * 254 = Bloqueo total.
+ * 255 = Bloqueo entre alto y bajo.
+ *
+ * Visual del puente:
+ * Crea eventos encima de los tiles 253 con estas opciones:
+ * - Comentario: <dex_puente_visual>
+ * - Prioridad: Encima de personajes
+ * - Pasar a través: ON
+ * - Gráfico: el pedazo visual del puente
+ *
+ * El plugin mostrará esos eventos solo cuando el jugador esté en 253 viniendo desde 251.
+ *
+ * Camino secreto:
+ * Coloca región 251 en la entrada y región 253 en todo el camino oculto.
+ * Si "Permitir Puente/Camino aunque el tile bloquee" está ON, podrás caminar
+ * por región 253 aunque visualmente parezca pared, vacío, arbusto o borde.
  */
 
-(function() {
+(() => {
     "use strict";
 
-    const params = PluginManager.parameters('Dex_Overpass');
-    const Z_ENTRANCE  = Number(params['Zona Entrada'] || 255);
-    const Z_PATH      = Number(params['Zona Camino'] || 254);
-    const Z_UNDERPASS = Number(params['Zona Paso Inferior'] || 253);
-    const Z_BLOCK     = Number(params['Zona Bloqueo Total'] || 252);
+    const NOMBRE_PLUGIN = (() => {
+        const script = document.currentScript;
+        if (!script) return "Dex_Overpass";
+        const src = script.src || "Dex_Overpass.js";
+        return decodeURIComponent(src.split("/").pop().replace(/\.js$/i, ""));
+    })();
 
-    // 1. Inicialización de Nivel
-    const _Game_CharacterBase_initMembers = Game_CharacterBase.prototype.initMembers;
-    Game_CharacterBase.prototype.initMembers = function() {
-        _Game_CharacterBase_initMembers.call(this);
-        this._bridgeLevel = 0; // 0 = Suelo común, 1 = Elevado
+    const params = PluginManager.parameters(NOMBRE_PLUGIN);
+
+    const REGION_BAJO = Number(params.RegionBajo || 251);
+    const REGION_ALTO = Number(params.RegionAlto || 252);
+    const REGION_PUENTE = Number(params.RegionPuente || 253);
+    const REGION_BLOQUEO = Number(params.RegionBloqueo || 254);
+    const REGION_BLOQUEO_ALTO_BAJO = Number(params.RegionBloqueoAltoBajo || 255);
+    const PERMITIR_PUENTE_BLOQUEADO = String(params.PermitirPuenteBloqueado || "true") === "true";
+    const DEBUG = String(params.ModoDebug || "false") === "true";
+
+    function logDex(...args) {
+        if (DEBUG) console.log("[Dex_Overpass]", ...args);
+    }
+
+    function regionEn(x, y) {
+        return $gameMap.regionId(x, y);
+    }
+
+    function esBajo(regionId) {
+        return regionId === REGION_BAJO;
+    }
+
+    function esAlto(regionId) {
+        return regionId === REGION_ALTO;
+    }
+
+    function esPuente(regionId) {
+        return regionId === REGION_PUENTE;
+    }
+
+    function esEspecial(regionId) {
+        return [
+            REGION_BAJO,
+            REGION_ALTO,
+            REGION_PUENTE,
+            REGION_BLOQUEO,
+            REGION_BLOQUEO_ALTO_BAJO
+        ].includes(regionId);
+    }
+
+    function nivelActual(personaje) {
+        return personaje._dexNivelOverpass || "bajo";
+    }
+
+    function setNivel(personaje, nivel) {
+        if (!personaje) return;
+        personaje._dexNivelOverpass = nivel === "alto" ? "alto" : "bajo";
+        logDex("Nivel:", personaje.constructor.name, personaje._dexNivelOverpass, "region", personaje.regionId());
+    }
+
+    function actualizarNivelPorRegion(personaje) {
+        if (!personaje) return;
+        const regionId = personaje.regionId();
+
+        if (esBajo(regionId)) {
+            setNivel(personaje, "bajo");
+        } else if (esAlto(regionId)) {
+            setNivel(personaje, "alto");
+        } else if (!personaje._dexNivelOverpass) {
+            setNivel(personaje, "bajo");
+        }
+    }
+
+    function jugadorDebajoDelPuente() {
+        return $gamePlayer &&
+            esPuente($gamePlayer.regionId()) &&
+            nivelActual($gamePlayer) === "bajo";
+    }
+
+    function debeMostrarPuenteVisual() {
+        return jugadorDebajoDelPuente() || !!$gamePlayer._dexMantenerPuenteVisual;
+    }
+
+    function comentariosEvento(evento) {
+        if (!evento || !evento.list()) return [];
+        return evento.list()
+            .filter(cmd => cmd.code === 108 || cmd.code === 408)
+            .flatMap(cmd => cmd.parameters || []);
+    }
+
+    function esEventoVisualPuente(evento) {
+        return comentariosEvento(evento).includes("<dex_puente_visual>");
+    }
+
+    function actualizarEventosVisualesPuente() {
+        if (!$gameMap || !$gamePlayer) return;
+        const mostrar = debeMostrarPuenteVisual();
+
+        $gameMap.events().forEach(evento => {
+            if (!esEventoVisualPuente(evento)) return;
+            evento.setTransparent(!mostrar);
+        });
+    }
+
+    const _Game_Player_refresh = Game_Player.prototype.refresh;
+    Game_Player.prototype.refresh = function() {
+        _Game_Player_refresh.call(this);
+        actualizarNivelPorRegion(this);
     };
 
-    // 2. Máquina de Estados (Actualización pasiva al pisar el Tile)
-    const _Game_CharacterBase_refreshBushDepth = Game_CharacterBase.prototype.refreshBushDepth;
-    Game_CharacterBase.prototype.refreshBushDepth = function() {
-        _Game_CharacterBase_refreshBushDepth.call(this);
-        
-        const r = this.regionId();
-        const t = this.terrainTag();
+    const _Game_Player_updateMove = Game_Player.prototype.updateMove;
+    Game_Player.prototype.updateMove = function() {
+        _Game_Player_updateMove.call(this);
+        actualizarNivelPorRegion(this);
 
-        if (r === Z_ENTRANCE || t === Z_ENTRANCE) {
-            this._bridgeLevel = 1; // Subir al sistema elevado
-        } else if (r === Z_PATH || t === Z_PATH) {
-            if (this._bridgeLevel === undefined) this._bridgeLevel = 0; // Mantener nivel actual
-        } else if (r === Z_UNDERPASS || t === Z_UNDERPASS) {
-            this._bridgeLevel = 0; // Forzar nivel inferior
-        } else {
-            this._bridgeLevel = 0; // Suelo normal fuera del mapa
+        if (!this.isMoving() && !esPuente(this.regionId())) {
+            this._dexMantenerPuenteVisual = false;
         }
     };
 
-    // Sincronización de seguidores
-    const _Game_Follower_refreshBushDepth = Game_Follower.prototype.refreshBushDepth;
-    Game_Follower.prototype.refreshBushDepth = function() {
-        _Game_Follower_refreshBushDepth.call(this);
-        const r = this.regionId();
-        const t = this.terrainTag();
-        if (r === Z_ENTRANCE || t === Z_ENTRANCE) {
-            this._bridgeLevel = 1;
-        } else if (r === Z_PATH || t === Z_PATH) {
-            this._bridgeLevel = $gamePlayer._bridgeLevel || 0;
-        } else {
-            this._bridgeLevel = 0;
+    const _Game_Player_moveStraight = Game_Player.prototype.moveStraight;
+    Game_Player.prototype.moveStraight = function(d) {
+        const regionOrigen = this.regionId();
+        const nivelOrigen = nivelActual(this);
+
+        _Game_Player_moveStraight.call(this, d);
+
+        const regionDestino = this.regionId();
+
+        if ((esPuente(regionDestino) && nivelOrigen === "bajo") ||
+            (esPuente(regionOrigen) && nivelOrigen === "bajo")) {
+            this._dexMantenerPuenteVisual = true;
         }
     };
 
-    // 3. Renderizado de Capas (Z-Index)
-    const _Game_CharacterBase_screenZ = Game_CharacterBase.prototype.screenZ;
-    Game_CharacterBase.prototype.screenZ = function() {
-        if (this._bridgeLevel === 1) return 6; // Por encima de todo
-        return _Game_CharacterBase_screenZ.call(this);
+    const _Game_Player_locate = Game_Player.prototype.locate;
+    Game_Player.prototype.locate = function(x, y) {
+        _Game_Player_locate.call(this, x, y);
+        actualizarNivelPorRegion(this);
     };
 
-    // 4. Control de Físicas Avanzado (canPass)
-    const _Game_CharacterBase_canPass = Game_CharacterBase.prototype.canPass;
-    Game_CharacterBase.prototype.canPass = function(x, y, d) {
+    const _Game_CharacterBase_isMapPassable = Game_CharacterBase.prototype.isMapPassable;
+    Game_CharacterBase.prototype.isMapPassable = function(x, y, d) {
         const x2 = $gameMap.roundXWithDirection(x, d);
         const y2 = $gameMap.roundYWithDirection(y, d);
-        
-        if (!$gameMap.isValid(x2, y2)) return false;
-        if (this.isThrough() || this.isDebugThrough()) return true;
 
-        const r1 = $gameMap.regionId(x, y);
-        const t1 = $gameMap.terrainTag(x, y);
-        const r2 = $gameMap.regionId(x2, y2);
-        const t2 = $gameMap.terrainTag(x2, y2);
-        
-        const lvl = this._bridgeLevel || 0;
+        const actual = regionEn(x, y);
+        const destino = regionEn(x2, y2);
 
-        // Regla General: Bloqueo absoluto zona 252
-        if (r2 === Z_BLOCK || t2 === Z_BLOCK) return false;
-
-        const srcEntrance = (r1 === Z_ENTRANCE || t1 === Z_ENTRANCE);
-        const dstEntrance = (r2 === Z_ENTRANCE || t2 === Z_ENTRANCE);
-        const srcPath     = (r1 === Z_PATH || t1 === Z_PATH);
-        const dstPath     = (r2 === Z_PATH || t2 === Z_PATH);
-        const dstUnder     = (r2 === Z_UNDERPASS || t2 === Z_UNDERPASS);
-
-        // --- COMPORTAMIENTO NIVEL 1 (ARRIBA) ---
-        if (lvl === 1) {
-            // Permitir moverse libremente entre Entradas (255) y Caminos (254) ignorando las 'X' del mapa
-            if ((srcEntrance || srcPath) && (dstEntrance || dstPath)) {
-                return !this.isCollidedWithCharacters(x2, y2);
-            }
-            // Permitir salir de la entrada de regreso al suelo normal común (Región 0)
-            if (srcEntrance && !dstEntrance && !dstPath && !dstUnder) {
-                return _Game_CharacterBase_canPass.call(this, x, y, d);
-            }
-            // Muro de contención: Si estás arriba y quieres ir a un paso inferior (253) o al vacío -> Bloquear
-            if ((srcEntrance || srcPath) && (dstUnder || (!dstEntrance && !dstPath))) {
-                return false;
-            }
-        } 
-        // --- COMPORTAMIENTO NIVEL 0 (ABAJO) ---
-        else {
-            // Permitir entrar al sistema desde el suelo común pisando la Entrada (255) -> Ignora la 'X'
-            if (!srcEntrance && !srcPath && dstEntrance) {
-                return !this.isCollidedWithCharacters(x2, y2);
-            }
-            // Permitir caminar bajo el puente (Zonas 253 o los mismos caminos de 254 desde abajo)
-            if (dstUnder || dstPath) {
-                return !this.isCollidedWithCharacters(x2, y2);
-            }
-            // Evitar que alguien abajo intente subirse de lado a una rampa (255)
-            if ((srcPath) && dstEntrance) {
-                return false;
-            }
+        if (!esEspecial(actual) && !esEspecial(destino)) {
+            return _Game_CharacterBase_isMapPassable.call(this, x, y, d);
         }
 
-        return _Game_CharacterBase_canPass.call(this, x, y, d);
+        if (destino === REGION_BLOQUEO) return false;
+        if (destino === REGION_BLOQUEO_ALTO_BAJO) return false;
+
+        const nivel = nivelActual(this);
+
+        // Entrada al puente/camino secreto.
+        // Solo puedes entrar a 253 desde 251, 252 o desde otro 253.
+        if (esPuente(destino)) {
+            if (esBajo(actual) || esAlto(actual) || esPuente(actual)) {
+                return PERMITIR_PUENTE_BLOQUEADO
+                    ? true
+                    : _Game_CharacterBase_isMapPassable.call(this, x, y, d);
+            }
+            return false;
+        }
+
+        // Camino secreto bajo: permite volver de 253 a 251.
+        if (esPuente(actual) && nivel === "bajo" && esBajo(destino)) {
+            return true;
+        }
+
+        // Camino alto: permite volver de 253 a 252.
+        if (esPuente(actual) && nivel === "alto" && esAlto(destino)) {
+            return true;
+        }
+
+        // Si estás dentro de 253, no puedes salir a tiles sin región especial.
+        // Esto evita caminar libre por el mapa después de entrar al camino secreto.
+        if (esPuente(actual) && !esEspecial(destino)) {
+            return false;
+        }
+
+        if (esPuente(actual) && nivel === "bajo" && esAlto(destino)) {
+            return false;
+        }
+
+        if (esPuente(actual) && nivel === "alto" && esBajo(destino)) {
+            return false;
+        }
+
+        return _Game_CharacterBase_isMapPassable.call(this, x, y, d);
     };
 
-    // 5. Aislamiento de colisiones entre alturas
-    const _Game_Event_isCollidedWithPlayerCharacters = Game_Event.prototype.isCollidedWithPlayerCharacters;
-    Game_Event.prototype.isCollidedWithPlayerCharacters = function(x, y) {
-        if ((this._bridgeLevel || 0) !== ($gamePlayer._bridgeLevel || 0)) return false;
-        return _Game_Event_isCollidedWithPlayerCharacters.call(this, x, y);
+    const _Game_Map_setup = Game_Map.prototype.setup;
+    Game_Map.prototype.setup = function(mapId) {
+        _Game_Map_setup.call(this, mapId);
+        setTimeout(() => actualizarEventosVisualesPuente(), 0);
+    };
+
+    const _Game_Player_update = Game_Player.prototype.update;
+    Game_Player.prototype.update = function(sceneActive) {
+        _Game_Player_update.call(this, sceneActive);
+        actualizarNivelPorRegion(this);
+        actualizarEventosVisualesPuente();
     };
 
 })();
