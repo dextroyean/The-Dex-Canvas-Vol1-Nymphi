@@ -1,6 +1,6 @@
 /*:
  * @target MZ
- * @plugindesc [v1.7] Aura Sync de "The Dex Canvas" - Edición Impacto de Texto (Perfect/Good/Miss).
+ * @plugindesc [v1.8] Aura Sync de "The Dex Canvas" - Edición Feedback Reactivo y Zona Perfecta de Neon.
  * @author The Dex Canvas Team
  *
  * @param perfectSE
@@ -52,12 +52,10 @@
  *
  * @help
  * ============================================================================
- * THE DEX CANVAS - AURA SYNC v1.7 (Popups de Texto Flotante)
+ * THE DEX CANVAS - AURA SYNC v1.8 (Sincronización Reactiva de Neon)
  * ============================================================================
- * Añade impacto visual inmediato mostrando las valoraciones en tiempo real:
- * - PERFECT: Texto animado en gradiente arcoíris místico.
- * - GOOD: Texto azul cielo de sincronización exitosa.
- * - MISS: Texto rojo de impacto recibido.
+ * Resuelve la confusión de timing añadiendo un indicador de zona perfecta 
+ * que brilla con luz aditiva en el frame exacto de activación.
  */
 
 (() => {
@@ -211,7 +209,6 @@
         this.addChild(this._parrySprite);
     };
 
-    // Método nuevo para instanciar el texto flotante de impacto
     Scene_Battle.prototype.createParryFeedbackText = function(x, y, score) {
         const textSprite = new Sprite_ParryText(x, y, score);
         this.addChild(textSprite);
@@ -231,7 +228,7 @@
         }
     };
 
-    // --- SPRITE: MATRIZ ARCANA ---
+    // --- SPRITE: MATRIZ ARCANA REACTIVA ---
 
     function Sprite_ParryCircle() {
         this.initialize(...arguments);
@@ -250,7 +247,7 @@
         
         const minorVariance = (Math.random() * 0.01) - 0.005;
         this._scaleSpeed = baseSpeed + minorVariance; 
-        this._rotationSpeed = (Math.random() * 0.015 + 0.015) * (Math.random() > 0.5 ? 1 : -1);
+        this._rotationSpeed = (Math.random() * 0.012 + 0.012) * (Math.random() > 0.5 ? 1 : -1);
 
         this.createMagicMatrices();
     };
@@ -261,13 +258,43 @@
         const cx = canvasSize / 2;
         const cy = canvasSize / 2;
 
+        // 1. MATRIZ BASE OBJETIVO (Fija de fondo)
         this._targetRing = new Sprite(new Bitmap(canvasSize, canvasSize));
         this._targetRing.anchor.x = 0.5;
         this._targetRing.anchor.y = 0.5;
         let ctx = this._targetRing.bitmap.context;
-        this.drawArcaneStructure(ctx, cx, cy, radius, 'rgba(255, 255, 255, 0.4)', 2);
+        this.drawArcaneStructure(ctx, cx, cy, radius, 'rgba(255, 255, 255, 0.35)', 2);
         this.addChild(this._targetRing);
 
+        // 2. NUEVO: HAZ DE LUZ DE ZONA PERFECTA (Indicador físico del Sweet Spot)
+        this._perfectZoneGuide = new Sprite(new Bitmap(canvasSize, canvasSize));
+        this._perfectZoneGuide.anchor.x = 0.5;
+        this._perfectZoneGuide.anchor.y = 0.5;
+        let ctxZone = this._perfectZoneGuide.bitmap.context;
+        ctxZone.strokeStyle = 'rgba(250, 204, 21, 0.2)'; // Oro translúcido de fondo
+        ctxZone.lineWidth = 12; // Un carril ancho visible
+        ctxZone.beginPath();
+        ctxZone.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctxZone.stroke();
+        this.addChild(this._perfectZoneGuide);
+
+        // 3. NUEVO: SPRITE DE DESTELLO ADITIVO (Se activa con brillo de neón en el frame del Perfect)
+        this._perfectGlowRing = new Sprite(new Bitmap(canvasSize, canvasSize));
+        this._perfectGlowRing.anchor.x = 0.5;
+        this._perfectGlowRing.anchor.y = 0.5;
+        this._perfectGlowRing.blendMode = 1; // Mezcla aditiva (Brillo de luz pura)
+        this._perfectGlowRing.visible = false; // Oculto hasta que entremos en ventana
+        let ctxGlow = this._perfectGlowRing.bitmap.context;
+        ctxGlow.strokeStyle = '#fde047'; // Amarillo Neón/Oro Eléctrico
+        ctxGlow.lineWidth = 6;
+        ctxGlow.shadowColor = '#eab308';
+        ctxGlow.shadowBlur = 12; // Difuminado mágico de luz
+        ctxGlow.beginPath();
+        ctxGlow.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctxGlow.stroke();
+        this.addChild(this._perfectGlowRing);
+
+        // 4. MATRIZ DE ACCIÓN (La que viaja y gira)
         this._actionRing = new Sprite(new Bitmap(canvasSize, canvasSize));
         this._actionRing.anchor.x = 0.5;
         this._actionRing.anchor.y = 0.5;
@@ -286,7 +313,7 @@
         ctx.lineWidth = 1.5;
         ctx.setLineDash([6, 10]);
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 20, 0, 2 * Math.PI);
+        ctx.arc(cx, cy, r + 22, 0, 2 * Math.PI);
         ctx.stroke();
         ctx.setLineDash([]); 
 
@@ -333,6 +360,16 @@
 
             this._frameAge++;
             
+            // VERIFICACIÓN DE FRAME DESTELLO (Real-time Feedback)
+            const precision = this._actionRing.scale.x;
+            if (precision >= 0.92 && precision <= 1.08) {
+                // Si está en la zona exacta, encendemos el Neón y lo hacemos pulsar intensamente
+                this._perfectGlowRing.visible = true;
+                this._perfectGlowRing.opacity = 170 + Math.sin(this._frameAge * 0.6) * 85;
+            } else {
+                this._perfectGlowRing.visible = false;
+            }
+
             if (this._frameAge > 2) {
                 if (Input.isTriggered('ok') || TouchInput.isTriggered()) {
                     this._hasTriggered = true;
@@ -363,7 +400,6 @@
 
     Sprite_ParryCircle.prototype.executeEnd = function(score) {
         if (SceneManager._scene instanceof Scene_Battle) {
-            // Mandamos a crear el texto justo en las coordenadas del círculo destruido antes de reportar
             SceneManager._scene.createParryFeedbackText(this.x, this.y - 30, score);
             SceneManager._scene.removeParrySprite(this);
         }
@@ -372,7 +408,7 @@
 
 })();
 
-// --- MOTOR DE TEXTO FLOTANTE  ---
+// --- SPRITE: TEXTO FLOTANTE ---
 
 function Sprite_ParryText() {
     this.initialize(...arguments);
@@ -388,14 +424,13 @@ Sprite_ParryText.prototype.initialize = function(x, y, score) {
     this.anchor.x = 0.5;
     this.anchor.y = 0.5;
     
-    this._duration = 45; // Duración en frames del texto en pantalla (~0.75 segundos)
+    this._duration = 45; 
     this._maxDuration = 45;
     
     this.createTextBox(score);
 };
 
 Sprite_ParryText.prototype.createTextBox = function(score) {
-    // Dimensiones del contenedor del texto
     const w = 240;
     const h = 60;
     this.bitmap = new Bitmap(w, h);
@@ -406,39 +441,30 @@ Sprite_ParryText.prototype.createTextBox = function(score) {
     ctx.textBaseline = "middle";
     
     let text = "";
-    
-    // Borde de la letra
     ctx.strokeStyle = "black";
     ctx.lineWidth = 5;
 
-    // Asignación de Strings y Estilos según puntuación
     if (score === 1.0) {
         text = "PERFECT";
-        
-        // CREACIÓN DEL GRADIENTE ARCOÍRIS
-        // Creamos una línea de color desde el inicio del texto (X: 40) hasta el final (X: 200)
         const rainbowGrad = ctx.createLinearGradient(40, 0, 200, 0);
-        rainbowGrad.addColorStop(0.0, "#ff3333"); // Rojo
-        rainbowGrad.addColorStop(0.2, "#ff9933"); // Naranja
-        rainbowGrad.addColorStop(0.4, "#ffff33"); // Amarillo
-        rainbowGrad.addColorStop(0.6, "#33cc33"); // Verde
-        rainbowGrad.addColorStop(0.8, "#3399ff"); // Azul
-        rainbowGrad.addColorStop(1.0, "#b333ff"); // Morado
+        rainbowGrad.addColorStop(0.0, "#ff3333"); 
+        rainbowGrad.addColorStop(0.2, "#ff9933"); 
+        rainbowGrad.addColorStop(0.4, "#ffff33"); 
+        rainbowGrad.addColorStop(0.6, "#33cc33"); 
+        rainbowGrad.addColorStop(0.8, "#3399ff"); 
+        rainbowGrad.addColorStop(1.0, "#b333ff"); 
         
         ctx.fillStyle = rainbowGrad;
     } else if (score === 0.5) {
         text = "GOOD";
-        ctx.fillStyle = "#38bdf8"; // Azul Cielo Brillante
+        ctx.fillStyle = "#38bdf8"; 
     } else {
         text = "MISS";
-        ctx.fillStyle = "#f87171"; // Rojo Coral / Alerta
+        ctx.fillStyle = "#f87171"; 
     }
 
-    // Dibujar primero el borde y luego el relleno encima
     ctx.strokeText(text, w / 2, h / 2);
     ctx.fillText(text, w / 2, h / 2);
-    
-    // Avisar a PixiJS que el lienzo de texturas cambió
     this.bitmap._hasChanges = true;
 };
 
@@ -447,22 +473,17 @@ Sprite_ParryText.prototype.update = function() {
     
     if (this._duration > 0) {
         this._duration--;
-        
-        // FÍSICAS DEL TEXTO: Flota hacia arriba suavemente
         this.y -= 0.8;
         
-        // ANIMACIÓN DE ESCALA: Crece un poco al salir (efecto pop) y luego se estabiliza
         if (this._duration > this._maxDuration - 8) {
             this.scale.x += 0.03;
             this.scale.y += 0.03;
         }
         
-        // DESVANECIMIENTO (Fade Out) progresivo al final de su vida
         if (this._duration < 20) {
             this.opacity = (this._duration / 20) * 255;
         }
         
-        // Auto-destrucción al expirar el tiempo para no saturar memoria
         if (this._duration === 0) {
             if (this.parent) this.parent.removeChild(this);
         }

@@ -1,10 +1,10 @@
 [
 null,
-{"id":1,"expanded":true,"name":"Sylverain","order":3,"parentId":7,"scrollX":1131,"scrollY":639,"quick":false},
+{"id":1,"expanded":true,"name":"Sylverain","order":3,"parentId":7,"scrollX":1131,"scrollY":1087,"quick":false},
 {"id":2,"expanded":true,"name":"Prologo","order":1,"parentId":0,"scrollX":1131,"scrollY":631,"quick":false},
 {"id":3,"expanded":true,"name":"Hogar de las hadas","order":6,"parentId":1,"scrollX":1131,"scrollY":639,"quick":false},
 {"id":4,"expanded":true,"name":"Casa de Nymphi","order":7,"parentId":3,"scrollX":1131,"scrollY":631,"quick":false},
 {"id":5,"expanded":false,"name":"Posada","order":5,"parentId":1,"scrollX":1131,"scrollY":639,"quick":false},
 {"id":6,"expanded":false,"name":"Tienda de armas","order":4,"parentId":1,"scrollX":1131,"scrollY":639,"quick":false},
-{"id":7,"expanded":true,"name":"World","order":2,"parentId":0,"scrollX":1165,"scrollY":948,"quick":false}
+{"id":7,"expanded":true,"name":"World","order":2,"parentId":0,"scrollX":1149,"scrollY":1081,"quick":false}
 ]
