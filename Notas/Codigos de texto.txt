@@ -1,0 +1,26 @@
+Ítems importantes: \C[30] Item \C[0]!
+Ítems de equipo: \C[17] equipo \C[0]!
+Items: \C[9] item \C[0]!
+
+
+Nombre de Nymphi: \C[30]\N[1]\C[0]
+Nombre de Yoss: \C[27]\N[2]\C[0]
+
+Código de texto	Descripción
+\V[n]	Será reemplazado por el valor de la enésima variable.
+\N[n]	Será reemplazado con el nombre del enésimo actor.
+\P[n]	Será reemplazado por el nombre del enésimo miembro del grupo (orden establecido).
+\G	Será reemplazado por la unidad monetaria.
+\C[n]	Dibuja el texto siguiente con el enésimo color. El color del texto se ajusta al contenido de la imagen del sistema [Window.png].
+\E[n]	Dibuja el enésimo icono.
+\FS[n]	Cambia el tamaño de la fuente del texto a 'n'.
+\{	Aumenta el texto en 1 paso.
+}	Disminuye el texto en 1 paso.
+\\	Reemplazado por el carácter de barra invertida.
+$	Abre la ventana dorada.
+\.	Espere 1/4 de segundo.
+\|	Espere 1 segundo.
+\!	Espere a que se pulse el botón.
+\>	Muestra el texto restante en la misma línea de una sola vez.
+<	Cancela el efecto que muestra todo el texto a la vez.
+\^	No espere a que se introduzca información después de mostrar el siguiente elemento.
