@@ -1,10 +1,10 @@
-Ítems importantes: \C[30] Item \C[0]!
-Ítems de equipo: \C[17] equipo \C[0]!
-Items: \C[9] item \C[0]!
+Ítems importantes: ¡Obtienes \C[18]Item\C[0]!
+Ítems de equipo: ¡Obtienes \C[17]equipo\C[0]!
+Items: ¡Obtienes \C[9]1 pocion\C[0]!
 
 
-Nombre de Nymphi: \C[30]\N[1]\C[0]
-Nombre de Yoss: \C[27]\N[2]\C[0]
+Nombre de Nymphi: \C[30]\N[1]\C[0] - \C[30]\N[1]
+Nombre de Yoss: \C[27]\N[2]\C[0] - \C[27]\N[2]
 
 Código de texto	Descripción
 \V[n]	Será reemplazado por el valor de la enésima variable.

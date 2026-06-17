@@ -1,0 +1,97 @@
+●Contents
+
+〇67types of effect materials (EFKEFC file)
+
+--------------------------------------------------------
+Firefly                Firefly                 100 frames (loop)
+Dust                   Dust                    100 frames (loop)
+Rain                   Rain                     30 frames (loop)
+ThunderStorm           Thunderstorm             30 frames (loop)
+Snow                   Snow                     50 frames (loop)
+Blizzard               Blizzard                 50 frames (loop)
+Fog                    Fog                      50 frames (loop)
+SandStorm              Sandstorm                50 frames (loop)
+AutumnBreath           Winter Wind              50 frames (loop)
+CherryBlossomBlizzard  Cherry Blossom Petals   100 frames (loop)
+Confetti               Confetti                100 frames (loop)
+DandelionFluff         Dandelion Seeds          50 frames (loop)
+Cloud                  Clouds                   50 frames (loop)
+Bubble                 Bubbles                 100 frames (loop)
+FallingRock            Falling Rocks           100 frames (loop)
+SnowFlake              Snowflakes              100 frames (loop)
+Light                  Light Rays              100 frames (loop)
+Butterfly              Butterflies              50 frames (loop)
+DappledSunlight1       Dappled Sunlight 1       10 frames (loop)
+DappledSunlight2       Dappled Sunlight 2       10 frames (loop)
+Fire1                  Fire 1                   10 frames (loop)
+Fire2                  Fire 2                   10 frames (loop)
+Fire3                  Fire 3                   10 frames (loop)
+Spark                  Sparks                   50 frames (loop)
+WaterFall1             Waterfall 1              30 frames (loop)
+WaterFall2             Waterfall 2              30 frames (loop)
+WaterFall3             Waterfall 3              30 frames (loop)
+Drop                   Water Drops             100 frames (loop)
+Fountain               Fountain                 30 frames (loop)
+Torch                  Torch Flame              10 frames (loop)
+Electric               Electric Charge          10 frames (loop)
+Firework1              Fireworks 1
+Firework2              Fireworks 2
+Firework3              Fireworks 3
+FireworkAll            Fireworks Show          100 frames (loop)
+ShootingStar           Shooting Star
+ShootingStarAll        Meteor Shower           100 frames (loop)
+KusudamaAtari          Celebration Ball (Win)
+KusudamaHazure         Celebration Ball (Miss)
+Monitor1               Monitor 1                30 frames (loop)
+Monitor2               Monitor 2                30 frames (loop)
+Monitor3               Monitor 3                30 frames (loop)
+Monitor4               Monitor 4                30 frames (loop)
+Warp1                  Warp 1
+Warp2                  Warp 2
+LensFlare1             Lens Flare 1
+LensFlare2             Lens Flare 2             30 frames (loop)
+Rainbow                Rainbow                  70 frames (loop)
+ConcentrationLine      Speed Lines              10 frames (loop)
+LevelUp                Level Up
+NewSkill               New Skill
+QuestClear             Quest Clear
+Warning                Warning                  80 frames (loop)
+Storm                  Storm                    30 frames (loop)
+CloudShadow            Cloud Shadows           100 frames (loop)
+Ghost                  Vengeful Spirit         100 frames (loop)
+OldFilm                Old Film Effect         100 frames (loop)
+Leaf                   Leaves                  100 frames (loop)
+Maple                  Maple Leaves            100 frames (loop)
+Smoke                  Smoke                    10 frames (loop)
+Aurora                 Aurora                  100 frames (loop)
+Vortex1                Vortex 1                 30 frames (loop)
+Vortex2                Vortex 2                 30 frames (loop)
+Vortex3                Vortex 3                 30 frames (loop)
+Vortex4                Vortex 4                 30 frames (loop)
+Sunlight               Sunlight                 10 frames (loop)
+Explosion              Explosion
+--------------------------------------------------------
+
+〇Texture assets
+〇Plugin assets
+〇RPG Maker MZ sample project
+
+
+●About plugins in the sample project
+
+・we borrow plug-ins from the creator of the URL below.
+
+Expanded options→	https://woodpenguin.web.fc2.com/MV_Plugin/ChoiceEX.html
+
+
+●About animation display limits
+
+・When displaying multiple animations at once (such as setting all allies in a skill), 
+they may not display properly due to particle limitations.
+In that case, please install the plugin from the URL below.
+
+
+Effekseer Effect Creation Tool – Related Thread↓
+https://forum.tkool.jp/index.php?threads/%E3%82%A8%E3%83%95%E3%82%A7%E3%82%AF%E3%83%88%E5%88%B6%E4%BD%9C%E3%83%84%E3%83%BC%E3%83%AB%E3%80%8Eeffekseer%E3%80%8F%E9%96%A2%E9%80%A3%E3%82%B9%E3%83%AC%E3%83%83%E3%83%89.4139/
+
+

@@ -1,0 +1,103 @@
+●収録内容
+
+〇エフェクト素材67種（EFKEFCファイル）
+
+-----------------------------------------------------------------------
+Firefly				蛍			100frames repeat
+Dust				埃			100frames repeat
+Rain				雨			30frames repeat
+ThunderStorm			雷雨			30frames repeat
+Snow				雪			50frames repeat
+Blizzard			吹雪			50frames repeat
+Fog				霧			50frames repeat
+SandStorm			砂嵐			50frames repeat
+AutumnBreath			木枯らし		50frames repeat
+CherryBlossomBlizzard		桜吹雪			100frames repeat
+Confetti			紙吹雪			100frames repeat
+DandelionFluff			わたげ			50frames repeat
+Cloud				雲			50frames repeat
+Bubble				泡			100frames repeat
+FallingRock			落石			100frames repeat
+SnowFlake			雪の結晶		100frames repeat
+Light				光			100frames repeat
+Butterfly			蝶			50frames repeat
+DappledSunlight1		木漏れ日1		10frames repeat
+DappledSunlight2		木漏れ日2		10frames repeat
+Fire1				火事1			10frames repeat
+Fire2				火事2			10frames repeat
+Fire3				火事3			10frames repeat
+Spark				火の粉			50frames repeat
+WaterFall1			滝1			30frames repeat
+WaterFall2			滝2			30frames repeat
+WaterFall3			滝3			30frames repeat
+Drop				しずく			100frames repeat
+Fountain			噴水			30frames repeat
+Torch				松明			10frames repeat
+Electric			帯電			10frames repeat
+Firework1			花火1
+Firework2			花火2
+Firework3			花火3
+FireworkAll			花火大会		100frames repeat
+ShootingStar			流れ星
+ShootingStarAll			流星群			100frames repeat
+KusudamaAtari			くす玉当たり
+KusudamaHazure			くす玉はずれ
+Monitor1			モニタ1			30frames repeat
+Monitor2			モニタ2			30frames repeat
+Monitor3			モニタ3			30frames repeat
+Monitor4			モニタ4			30frames repeat
+Warp1				ワープ1
+Warp2				ワープ2
+LensFlare1			レンズフレア1
+LensFlare2			レンズフレア2		30frames repeat
+Rainbow				虹			70frames repeat
+ConcentrationLine		集中線			10frames repeat
+LevelUp				レベルアップ
+NewSkill			ニュースキル
+QuestClear			クエストクリア
+Warning				ワーニング		80frames repeat
+Storm				暴風雨			30frames repeat
+CloudShadow			雲の影			100frames repeat
+Ghost				怨霊			100frames repeat
+OldFilm				古ぼけたフィルム	100frames repeat
+Leaf				木の葉			100frames repeat
+Maple				かえで			100frames repeat
+Smoke				煙			10frames repeat
+Aurora				オーロラ		100frames repeat
+Vortex1				渦1			30frames repeat
+Vortex2				渦2			30frames repeat
+Vortex3				渦3			30frames repeat
+Vortex4				渦4			30frames repeat
+Sunlight			日光			10frames repeat
+Explosion			爆発
+-----------------------------------------------------------------------
+
+〇テクスチャ素材
+〇プラグイン素材
+〇RPGツクールMZサンプルプロジェクト
+
+
+
+
+
+
+●サンプルプロジェクトにおけるプラグインについて
+
+・以下URLの製作者様からプラグインをお借りしております。
+
+
+選択肢拡張→	https://woodpenguin.web.fc2.com/MV_Plugin/ChoiceEX.html
+
+
+
+
+●アニメーション表示限界について
+
+・アニメーションを一度に複数表示させた時（スキルの全体設定など）、パーティクルの限界でうまく表示されない場合があります。
+その場合、恐れ入りますが以下のURLからプラグインの導入をお願いいたします。
+
+
+
+エフェクト制作ツール『Effekseer』関連スレッド↓
+
+https://forum.tkool.jp/index.php?threads/%E3%82%A8%E3%83%95%E3%82%A7%E3%82%AF%E3%83%88%E5%88%B6%E4%BD%9C%E3%83%84%E3%83%BC%E3%83%AB%E3%80%8Eeffekseer%E3%80%8F%E9%96%A2%E9%80%A3%E3%82%B9%E3%83%AC%E3%83%83%E3%83%89.4139/
