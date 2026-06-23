@@ -1,0 +1,235 @@
+{
+    "type": "group",
+    "id": "_element",
+    "animations": [
+        {
+            "field": "opacity",
+            "duration": 0.2,
+            "func": "linear",
+            "delay": 0.1,
+            "repeats": 0,
+            "relative": false,
+            "keyframes": {
+                "0": 0,
+                "100": 255
+            }
+        }
+    ],
+    "parameters": {
+        "keyboardHandling": false,
+        "horizontalNavigation": false,
+        "freeNavigation": false
+    },
+    "bindings": {
+        "size": {
+            "width": "700dp",
+            "height": "92hdp"
+        },
+        "position": {
+            "x": 0,
+            "y": 0
+        }
+    },
+    "childrens": [{
+        "type": "group",
+        "id": "_contentGroup",
+        "parameters": {
+            "keyboardHandling": false,
+            "horizontalNavigation": false,
+            "freeNavigation": false
+        },
+        "bindings": {
+            "size": {
+                "width": "100%",
+                "height": "92%"
+            },
+            "position": {
+                "x": 0,
+                "y": "10hdp"
+            }
+        },
+        "childrens": [
+            {
+                "type": "plane",
+                "id": "_backgroundImage",
+                "parameters": {
+                    "imageName": "achiv_item_back",
+                    "folderName": "PKD_SimpleAchievements",
+                    "margins": 60
+                },
+                "bindings": {
+                    "size": {
+                        "width": "100%",
+                        "height": "100%"
+                    },
+                    "position": {
+                        "x": "center",
+                        "y": "center"
+                    }
+                },
+                "childrens": []
+            },
+            {
+                "type": "image",
+                "id": "_achievementImage",
+                "parameters": {
+                    "folderName": "PKD_SimpleAchievements",
+                    "keepAspect": false,
+                    "useAspectSize": false
+                },
+                "bindings": {
+                    "size": {
+                        "width": 64,
+                        "height": 64
+                    },
+                    "position": {
+                        "x": "18hdp",
+                        "y": "center"
+                    },
+                    "image": "$achievementImage"
+                },
+                "childrens": [
+                    {
+                        "type": "plane",
+                        "id": "_iconFrame",
+                        "parameters": {
+                            "imageName": "icon_frame",
+                            "folderName": "PKD_SimpleAchievements",
+                            "margins": 15
+                        },
+                        "bindings": {
+                            "size": {
+                                "width": "115%",
+                                "height": "115%"
+                            },
+                            "position": {
+                                "x": "center",
+                                "y": "center"
+                            }
+                        },
+                        "childrens": []
+                    }
+                ]
+            },
+            {
+                "type": "group",
+                "id": "_descriptionGroup",
+                "parameters": {
+                    "keyboardHandling": false,
+                    "horizontalNavigation": false,
+                    "freeNavigation": false
+                },
+                "bindings": {
+                    "size": {
+                        "width": "100% - prevWidth",
+                        "height": "76%"
+                    },
+                    "position": {
+                        "x": "prevEndX + 6hdp",
+                        "y": "center"
+                    }
+                },
+                "childrens": [{
+                        "type": "text",
+                        "id": "_nameTextElement",
+                        "effects": ["shadow"],
+                        "parameters": {
+                            "alignment": "center",
+                            "font": {
+                                "face": null,
+                                "size": 18,
+                                "italic": false,
+                                "bold": false,
+                                "weight": 0
+                            },
+                            "margins": {
+                                "x": 0,
+                                "y": 0
+                            },
+                            "outline": {
+                                "color": "#000000",
+                                "width": 0
+                            },
+                            "textColor": "#3e8b9b",
+                            "shadow": {
+                                "color": "#000",
+                                "opacity": 200,
+                                "margins": {
+                                    "x": 1,
+                                    "y": 1
+                                }
+                            },
+                            "multiline": false,
+                            "verticalCentered": true,
+                            "actualWidth": false,
+                            "actualHeight": false,
+                            "isLoadFontFromFile": false
+                        },
+                        "bindings": {
+                            "size": {
+                                "width": "100%",
+                                "height": "20hdp"
+                            },
+                            "position": {
+                                "x": "center",
+                                "y": "2hdp"
+                            },
+                            "fontSize": "18hdp",
+                            "text": ["%1", "$achievementName"]
+                        },
+                        "childrens": []
+                    },
+                    {
+                        "type": "text",
+                        "id": "_descriptionTextElement",
+                        "parameters": {
+                            "alignment": "center",
+                            "font": {
+                                "face": null,
+                                "size": 18,
+                                "italic": false,
+                                "bold": false,
+                                "weight": 0
+                            },
+                            "margins": {
+                                "x": 0,
+                                "y": 0
+                            },
+                            "outline": {
+                                "color": null,
+                                "width": 2
+                            },
+                            "textColor": "#000000",
+                            "shadow": {
+                                "color": "#000",
+                                "opacity": 0,
+                                "margins": {
+                                    "x": 1,
+                                    "y": 1
+                                }
+                            },
+                            "multiline": true,
+                            "verticalCentered": false,
+                            "actualWidth": false,
+                            "actualHeight": false,
+                            "isLoadFontFromFile": false
+                        },
+                        "bindings": {
+                            "size": {
+                                "width": "90%",
+                                "height": "100% - prevHeight - 4hdp"
+                            },
+                            "position": {
+                                "x": "center",
+                                "y": "prevEndY + 2hdp"
+                            },
+                            "fontSize": "16hdp",
+                            "text": "$achievementDescription"
+                        },
+                        "childrens": []
+                    }
+                ]
+            }
+        ]
+    }]
+}

@@ -1,0 +1,254 @@
+{
+    "type": "screen",
+    "id": "_achievementsMenuSprite",
+    "constants": {
+        "achievementsPerPage": 4,
+        "achievementItemPosition": {
+            "x": "center",
+            "y": "prevEndY + 8hdp"
+        }
+    },
+    "childrens": [{
+            "type": "image",
+            "id": "_windowBackground",
+            "parameters": {
+                "imageName": "window",
+                "folderName": "PKD_SimpleAchievements",
+                "keepAspect": false,
+                "useAspectSize": false
+            },
+            "bindings": {
+                "size": {
+                    "width": "450hdp",
+                    "height": "620hdp"
+                },
+                "position": {
+                    "x": "center",
+                    "y": "center"
+                }
+            },
+            "childrens": [
+                {
+                    "type": "group",
+                    "id": "_pageContainer",
+                    "parameters": {
+                        "keyboardHandling": false,
+                        "horizontalNavigation": false,
+                        "freeNavigation": false
+                    },
+                    "bindings": {
+                        "size": {
+                            "width": "410hdp",
+                            "height": "468hdp"
+                        },
+                        "position": {
+                            "x": "center",
+                            "y": "126hdp"
+                        }
+                    },
+                    "childrens": []
+                },
+                {
+                    "type": "plane",
+                    "id": "_counter",
+                    "parameters": {
+                        "imageName": "count_back",
+                        "folderName": "PKD_SimpleAchievements",
+                        "margins": 30
+                    },
+                    "bindings": {
+                        "size": {
+                            "width": "140hdp",
+                            "height": "40hdp"
+                        },
+                        "position": {
+                            "x": "right - 24hdp",
+                            "y": "bottom - 18hdp"
+                        }
+                    },
+                    "childrens": [{
+                        "type": "text",
+                        "id": "_counterText",
+                        "parameters": {
+                            "alignment": "center",
+                            "font": {
+                                "face": null,
+                                "size": 18,
+                                "italic": false,
+                                "bold": true,
+                                "weight": 0
+                            },
+                            "margins": {
+                                "x": 0,
+                                "y": 0
+                            },
+                            "outline": {
+                                "color": null,
+                                "width": 2
+                            },
+                            "textColor": "#6b3801",
+                            "shadow": {
+                                "color": "#000",
+                                "opacity": 0,
+                                "margins": {
+                                    "x": 1,
+                                    "y": 1
+                                }
+                            },
+                            "multiline": false,
+                            "verticalCentered": true,
+                            "actualWidth": false,
+                            "actualHeight": false,
+                            "isLoadFontFromFile": false
+                        },
+                        "bindings": {
+                            "size": {
+                                "width": "100%",
+                                "height": "100%"
+                            },
+                            "position": {
+                                "x": "center",
+                                "y": "center"
+                            },
+                            "fontSize": "42%",
+                            "text": ["%1 / %2", "$currentPageIndex", "$maxPage"]
+                        },
+                        "childrens": []
+                    }]
+                },
+                {
+                    "type": "imageButton",
+                    "id": "_nextPageButton",
+                    "parameters": {
+                        "folderName": "PKD_SimpleAchievements",
+                        "imageName": "page_right_00",
+                        "hoverImageName": "page_right_01",
+                        "pressedImageName": "page_right_00",
+                        "disabledImageName": "",
+
+                        "isCheckAlpha": false,
+
+                        "clickSe": "Cursor1",
+
+                        "desaturateWhenDisabled": false,
+
+                        "tint": "",
+                        "tintAlpha": 0.5,
+
+                        "overTint": "",
+                        "overTintAlpha": 0.5,
+
+                        "activeTint": "",
+                        "activeTintAlpha": 0.5,
+
+                        "disabledTint": "",
+                        "disabledTintAlpha": 0.5,
+
+                        "keyboardKey": "right",
+                        "keyboardHandled": true,
+                        "enabled": true
+                    },
+                    "bindings": {
+                        "visible": "$isNextPageButtonVisible",
+                        "size": {
+                            "width": "30hdp",
+                            "height": "56hdp"
+                        },
+                        "position": {
+                            "x": "right",
+                            "y": "center"
+                        }
+                    }
+                },
+                {
+                    "type": "imageButton",
+                    "id": "_previousPageButton",
+                    "parameters": {
+                        "folderName": "PKD_SimpleAchievements",
+                        "imageName": "page_left_00",
+                        "hoverImageName": "page_left_01",
+                        "pressedImageName": "page_left_00",
+                        "disabledImageName": "",
+
+                        "isCheckAlpha": false,
+
+                        "clickSe": "Cursor1",
+
+                        "desaturateWhenDisabled": false,
+
+                        "tint": "",
+                        "tintAlpha": 0.5,
+
+                        "overTint": "",
+                        "overTintAlpha": 0.5,
+
+                        "activeTint": "",
+                        "activeTintAlpha": 0.5,
+
+                        "disabledTint": "",
+                        "disabledTintAlpha": 0.5,
+
+                        "keyboardKey": "left",
+                        "keyboardHandled": true,
+                        "enabled": true
+                    },
+                    "bindings": {
+                        "visible": "$isPreviousPageButtonVisible",
+                        "size": {
+                            "width": "30hdp",
+                            "height": "56hdp"
+                        },
+                        "position": {
+                            "x": "0",
+                            "y": "center"
+                        }
+                    }
+                },
+                {
+                    "type": "imageButton",
+                    "id": "_closeButton",
+                    "parameters": {
+                        "folderName": "PKD_SimpleAchievements",
+                        "imageName": "close_button_00",
+                        "hoverImageName": "close_button_01",
+                        "pressedImageName": "close_button_00",
+                        "disabledImageName": "",
+
+                        "isCheckAlpha": false,
+
+                        "clickSe": "Cursor1",
+
+                        "desaturateWhenDisabled": false,
+
+                        "tint": "",
+                        "tintAlpha": 0.5,
+
+                        "overTint": "",
+                        "overTintAlpha": 0.5,
+
+                        "activeTint": "",
+                        "activeTintAlpha": 0.5,
+
+                        "disabledTint": "",
+                        "disabledTintAlpha": 0.5,
+
+                        "keyboardKey": "menu",
+                        "keyboardHandled": true,
+                        "enabled": true
+                    },
+                    "bindings": {
+                        "size": {
+                            "width": "52hdp",
+                            "height": "52hdp"
+                        },
+                        "position": {
+                            "x": "right - 29hdp",
+                            "y": "26hdp"
+                        }
+                    }
+                }
+            ]
+        }
+
+    ]
+}

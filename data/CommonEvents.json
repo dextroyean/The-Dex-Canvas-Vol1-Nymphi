@@ -1,6 +1,6 @@
 [
 null,
-{"id":1,"list":[{"code":108,"indent":0,"parameters":["0.0.1"]},{"code":408,"indent":0,"parameters":["[Added] Se crea menu, sprites iniciales y un prologo"]},{"code":108,"indent":0,"parameters":["[0.0.2] - 21/05/2026"]},{"code":408,"indent":0,"parameters":["##Changed"]},{"code":408,"indent":0,"parameters":["- Se cambia la pantalla de inicio y el prologo"]},{"code":408,"indent":0,"parameters":[""]},{"code":408,"indent":0,"parameters":["##Added"]},{"code":408,"indent":0,"parameters":["- Se agrega botones nuevos y un nuevo prologo"]},{"code":108,"indent":0,"parameters":["[0.0.3] - 22/05/2026"]},{"code":408,"indent":0,"parameters":["##Added "]},{"code":408,"indent":0,"parameters":["- Se agrega un plugin para poner un video de inactividad en la pantalla de inicio"]},{"code":0,"indent":0,"parameters":[]}],"name":"[LOG] Registro de Desarrollo","switchId":1,"trigger":0},
+{"id":1,"list":[{"code":0,"indent":0,"parameters":[]}],"name":"","switchId":1,"trigger":0},
 {"id":2,"list":[{"code":0,"indent":0,"parameters":[]}],"name":"Skip","switchId":1,"trigger":0},
 {"id":3,"list":[{"code":0,"indent":0,"parameters":[]}],"name":"","switchId":1,"trigger":0},
 {"id":4,"list":[{"code":0,"indent":0,"parameters":[]}],"name":"","switchId":1,"trigger":0}

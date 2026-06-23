@@ -4,7 +4,7 @@
 
 /*:
  * @target MZ
- * @plugindesc [v1.9.2] Aura Sync 
+ * @plugindesc [v1.9.3] Aura Sync 
  * @author The Dex Canvas Team
  *
  * @param perfectSE
@@ -83,10 +83,11 @@
  *
  * @help
  * ============================================================================
- * THE DEX CANVAS - AURA SYNC v1.9.2.1
+ * THE DEX CANVAS - AURA SYNC v1.9.3
  * ============================================================================
  *
  * Esta versión agrega:
+ * - Compatibilidad con Dex_DifficultyModes para endurecer parry por dificultad.
  * - Configuración por enemigo jefe.
  * - Configuración por skill.
  * - Prioridad: Skill > Enemigo > Parámetros del plugin.
@@ -286,6 +287,23 @@
         return Math.floor(Math.random() * (b - a + 1)) + a;
     };
 
+    const auraDifficultyWindowRate = function() {
+        if (window.DexDifficulty && typeof DexDifficulty.parryWindowRate === "function") {
+            const value = Number(DexDifficulty.parryWindowRate());
+            return Number.isFinite(value) && value > 0 ? value : 1.0;
+        }
+        return 1.0;
+    };
+
+    const auraDifficultySpeedRate = function() {
+        if (window.DexDifficulty && typeof DexDifficulty.parrySpeedRate === "function") {
+            const value = Number(DexDifficulty.parrySpeedRate());
+            return Number.isFinite(value) && value > 0 ? value : 1.0;
+        }
+        return 1.0;
+    };
+
+
     BattleManager.makeAuraSyncConfig = function(subject) {
         const action = this._action;
         const item = action && action.item ? action.item() : null;
@@ -323,9 +341,18 @@
         this.applyAuraSyncMeta(config, enemyMeta);
         this.applyAuraSyncMeta(config, skillMeta);
 
-        config.speedMin = Math.max(0.005, Number(config.speedMin) || DEF_SPEED);
-        config.speedMax = Math.max(config.speedMin, Number(config.speedMax) || config.speedMin);
+        const difficultySpeedRate = auraDifficultySpeedRate();
+        config.speedMin = Math.max(0.005, (Number(config.speedMin) || DEF_SPEED) * difficultySpeedRate);
+        config.speedMax = Math.max(config.speedMin, (Number(config.speedMax) || config.speedMin) * difficultySpeedRate);
         config.speed = (config.speedMin + config.speedMax) / 2;
+
+        const difficultyWindowRate = auraDifficultyWindowRate();
+        if (config.parryWindowFrames > 0) {
+            config.parryWindowFrames = Math.max(1, Math.round(config.parryWindowFrames * difficultyWindowRate));
+        }
+        if (config.perfectWindowFrames > 0) {
+            config.perfectWindowFrames = Math.max(1, Math.round(config.perfectWindowFrames * difficultyWindowRate));
+        }
 
         config.slowMoRate = clamp(Number(config.slowMoRate) || DEF_SLOWMO_RATE, 0.05, 1);
         config.slowMoFrames = Math.max(1, Math.floor(Number(config.slowMoFrames) || DEF_SLOWMO_FRAMES));
@@ -455,15 +482,28 @@
 
     BattleManager.applyAuraSyncWindowFrames = function(config) {
         const speed = Math.max(0.005, config.speed);
+        const difficultyWindowRate = auraDifficultyWindowRate();
+
         if (config.parryWindowFrames > 0) {
             const halfGood = clamp((config.parryWindowFrames * speed) / 2, 0.04, 0.95);
             config.goodMin = 1.0 - halfGood;
             config.goodMax = 1.0 + halfGood;
+        } else if (difficultyWindowRate !== 1.0) {
+            const center = 1.0;
+            const halfGood = ((config.goodMax - config.goodMin) / 2) * difficultyWindowRate;
+            config.goodMin = center - halfGood;
+            config.goodMax = center + halfGood;
         }
+
         if (config.perfectWindowFrames > 0) {
             const halfPerfect = clamp((config.perfectWindowFrames * speed) / 2, 0.02, 0.40);
             config.perfectMin = 1.0 - halfPerfect;
             config.perfectMax = 1.0 + halfPerfect;
+        } else if (difficultyWindowRate !== 1.0) {
+            const center = 1.0;
+            const halfPerfect = ((config.perfectMax - config.perfectMin) / 2) * difficultyWindowRate;
+            config.perfectMin = center - halfPerfect;
+            config.perfectMax = center + halfPerfect;
         }
         config.goodMin = clamp(config.goodMin, 0.31, 1.99);
         config.goodMax = clamp(config.goodMax, config.goodMin + 0.01, 2.60);
