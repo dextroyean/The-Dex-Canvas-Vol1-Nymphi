@@ -1,5 +1,5 @@
 [
 null,
 {"id":1,"battlerName":"Nymphi_fight","characterIndex":0,"characterName":"Main_char","classId":2,"equips":[7,0,0,3,0],"faceIndex":1,"faceName":"NymphiHD","traits":[],"initialLevel":1,"maxLevel":99,"name":"Nymphi","nickname":"","note":"","profile":""},
-{"id":2,"battlerName":"Yoss_fight","characterIndex":1,"characterName":"Main_char","classId":9,"equips":[7,0,0,0,0],"faceIndex":0,"faceName":"YossHD","traits":[],"initialLevel":2,"maxLevel":99,"name":"Yoss","nickname":"","note":"","profile":""}
+{"id":2,"battlerName":"Yoss_fight","characterIndex":1,"characterName":"Main_char","classId":9,"equips":[7,0,0,0,0],"faceIndex":1,"faceName":"YossHD","traits":[],"initialLevel":2,"maxLevel":99,"name":"Yoss","nickname":"","note":"","profile":""}
 ]
