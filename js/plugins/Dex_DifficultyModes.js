@@ -1,6 +1,6 @@
 /*:
  * @target MZ
- * @plugindesc Sistema de dificultad con menú visual por imagen. v1.1.5
+ * @plugindesc Sistema de dificultad con menú visual por imagen. v1.1.6
  * @author Dex / Jaime
  *
  * @help
@@ -25,6 +25,7 @@
  * v1.1.4:
  * - El cuadro seleccionador ya no cubre la franja inferior.
  * - El marco lateral ahora puede llegar al borde del panel.
+ * - Corrige inicio de partida desde selector para no bloquear Guardar.
  *
  * Compatible con:
  * - Dex_AuraSync v1.9.3+
@@ -451,7 +452,6 @@ var DexDifficulty = DexDifficulty || {};
     const _Scene_Title_commandNewGame = Scene_Title.prototype.commandNewGame;
     Scene_Title.prototype.commandNewGame = function() {
         if (SHOW_SELECTOR_ON_NEW_GAME) {
-            DataManager.setupNewGame();
             this._commandWindow.close();
             this.fadeOutAll();
             SceneManager.goto(Scene_DexDifficulty);
@@ -608,8 +608,10 @@ var DexDifficulty = DexDifficulty || {};
     };
 
     Scene_DexDifficulty.prototype.confirmSelection = function() {
-        DexDifficulty.setMode(this._selectedMode);
         SoundManager.playOk();
+        DataManager.setupNewGame();
+        DexDifficulty.setMode(this._selectedMode);
+        if ($gameSystem && $gameSystem.enableSave) $gameSystem.enableSave();
         SceneManager.goto(Scene_Map);
     };
 

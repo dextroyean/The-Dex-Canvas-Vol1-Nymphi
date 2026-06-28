@@ -7,12 +7,12 @@ Nombre de Nymphi: \C[30]\N[1]\C[0] - \C[30]\N[1]
 Nombre de Yoss: \C[27]\N[2]\C[0] - \C[27]\N[2]
 
 Código de texto	Descripción
-\V[n]	Será reemplazado por el valor de la enésima variable.
-\N[n]	Será reemplazado con el nombre del enésimo actor.
-\P[n]	Será reemplazado por el nombre del enésimo miembro del grupo (orden establecido).
+\V[n]	Será reemplazado por el valor de la variable.
+\N[n]	Será reemplazado con el nombre del actor.
+\P[n]	Será reemplazado por el nombre del miembro del grupo (orden establecido).
 \G	Será reemplazado por la unidad monetaria.
-\C[n]	Dibuja el texto siguiente con el enésimo color. El color del texto se ajusta al contenido de la imagen del sistema [Window.png].
-\E[n]	Dibuja el enésimo icono.
+\C[n]	Dibuja el texto siguiente con el color. El color del texto se ajusta al contenido de la imagen del sistema [Window.png].
+\E[n]	Dibuja el icono.
 \FS[n]	Cambia el tamaño de la fuente del texto a 'n'.
 \{	Aumenta el texto en 1 paso.
 }	Disminuye el texto en 1 paso.
@@ -24,3 +24,28 @@ $	Abre la ventana dorada.
 \>	Muestra el texto restante en la misma línea de una sola vez.
 <	Cancela el efecto que muestra todo el texto a la vez.
 \^	No espere a que se introduzca información después de mostrar el siguiente elemento.
+
+$gameVariables.setValue(5, 1)
+$gameVariables.value(2)
+
+
+Sylverain exterior:
+<TimeMode: global>
+
+World map:
+<TimeMode: global>
+
+Bosque de Lúmira:
+<TimeMode: global>
+
+Casas:
+<TimeMode: fixed>
+<Ambient: #2a1d16>
+<AmbientOpacity: 100>
+
+Cuevas:
+<TimeMode: fixed>
+<AmbientPreset: caveDark>
+
+Templos:
+<TimeMode: pause>

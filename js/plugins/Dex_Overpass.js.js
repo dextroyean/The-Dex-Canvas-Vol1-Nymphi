@@ -1,7 +1,7 @@
 /*:
  * @target MZ
- * @plugindesc Dex_Overpass v2.2 - Puentes, pasos bajos y caminos secretos por regiones para Tales of Dex.
- * @author Dex Team
+ * @plugindesc Dex_Overpass v2.4.1 - Puentes, pasos bajos, caminos secretos y techos superiores forzados por regiones.
+ * @author Dextroyean y Jaime
  *
  * @param RegionBajo
  * @text Región Bajo / Entrada secreta
@@ -34,19 +34,98 @@
  * @default true
  * @desc Si está ON, la región puente/camino secreto permite caminar aunque el tile tenga X.
  *
+ * @param RegionTechoForzado
+ * @text Región Techo / Estrella Forzada
+ * @type number
+ * @min 1
+ * @max 255
+ * @default 250
+ * @desc Los tiles de las capas superiores se dibujan sobre el jugador aunque no tengan estrella.
+ *
+ * @param TechoIgnoraBloqueo
+ * @text Techo usa paso tipo Estrella
+ * @type boolean
+ * @default true
+ * @desc Ignora el bloqueo de las capas superiores y usa el paso de las capas inferiores.
+ *
+ * @param ForzarPasoTecho
+ * @text Forzar paso en Región Techo
+ * @type boolean
+ * @default true
+ * @desc Permite entrar a la región de techo aunque debajo no exista un tile transitable.
+ *
+ * @param CoberturaCompletaTecho
+ * @text Cubrir con todos los tiles
+ * @type boolean
+ * @default true
+ * @desc Duplica las capas inferiores arriba del jugador para que pase visualmente por debajo del tile completo.
+ *
+ * @param FilasExtraArriba
+ * @text Filas extra de cobertura
+ * @type number
+ * @min 0
+ * @max 4
+ * @default 1
+ * @desc Cubre también tiles situados encima de la región 250 para ocultar sprites altos.
+ *
  * @param ModoDebug
  * @text Modo Debug
  * @type boolean
  * @default false
  *
  * @help
- * Dex_Overpass v2.2
+ * Dex_Overpass v2.4.1
  * ----------------------------------------------------------------------------
+ * 250 = Techo / estrella forzada.
  * 251 = Camino bajo / entrada a camino secreto. Activa modo debajo.
  * 252 = Camino alto. Activa modo encima.
  * 253 = Puente / camino secreto. Mantiene el modo actual.
  * 254 = Bloqueo total.
  * 255 = Bloqueo entre alto y bajo.
+ *
+ * TECHO / ESTRELLA FORZADA:
+ * ----------------------------------------------------------------------------
+ * 1. Pinta el suelo normal en una capa inferior.
+ * 2. Pinta el techo, copa, arco o decoración en la capa 3 o 4 del mapa.
+ * 3. Coloca la región 250 sobre esas casillas.
+ *
+ * El plugin enviará los tiles de las capas superiores por encima del jugador,
+ * aunque en la base de datos no tengan la bandera de estrella.
+ *
+ * Si "Cubrir con todos los tiles" está ON, también duplica visualmente las
+ * capas inferiores sobre el jugador. Esto permite caminar por debajo incluso
+ * cuando el gráfico fue pintado en las capas 1 o 2 del editor.
+ *
+ * "Filas extra de cobertura" extiende el techo visual hacia arriba.
+ * El valor 1 evita que la cabeza, sombrero o cabello de sprites altos asome
+ * por el borde superior de la región.
+ *
+ * La región 250 debe estar en LA MISMA CASILLA que contiene el tile que debe
+ * cubrir al personaje. Una región colocada sobre una casilla vacía o negra
+ * permite pasar, pero no tiene ningún gráfico que pueda dibujarse encima.
+ *
+ * Si "Techo usa paso tipo Estrella" está ON, el tile superior no bloqueará:
+ * la transitabilidad será decidida por el suelo de las capas inferiores.
+ *
+ * Si "Forzar paso en Región Techo" está ON, la región 250 será transitable
+ * incluso cuando no exista un suelo válido debajo. Esta opción es útil para
+ * bordes, vacío visual, copas y estructuras donde el mapa no tiene una capa
+ * inferior marcada como transitable.
+ *
+ * Esta región es ideal para:
+ * - Copas de árboles.
+ * - Arcos y entradas.
+ * - Techos interiores.
+ * - Túneles visuales.
+ * - Rocas o estructuras por debajo de las que pasa el jugador.
+ *
+ * IMPORTANTE:
+ * Con "Cubrir con todos los tiles" ON, el gráfico puede estar en cualquier
+ * capa. El plugin conserva el dibujo inferior y crea una copia superior para
+ * ocultar correctamente al personaje.
+ *
+ * Para mayor control visual sigue siendo recomendable separar el suelo y el
+ * techo en capas diferentes, pero ya no es obligatorio.
  *
  * Visual del puente:
  * Crea eventos encima de los tiles 253 con estas opciones:
@@ -80,7 +159,15 @@
     const REGION_PUENTE = Number(params.RegionPuente || 253);
     const REGION_BLOQUEO = Number(params.RegionBloqueo || 254);
     const REGION_BLOQUEO_ALTO_BAJO = Number(params.RegionBloqueoAltoBajo || 255);
+    const REGION_TECHO_FORZADO = Number(params.RegionTechoForzado || 250);
     const PERMITIR_PUENTE_BLOQUEADO = String(params.PermitirPuenteBloqueado || "true") === "true";
+    const TECHO_IGNORA_BLOQUEO = String(params.TechoIgnoraBloqueo || "true") === "true";
+    const FORZAR_PASO_TECHO = String(params.ForzarPasoTecho || "true") === "true";
+    const COBERTURA_COMPLETA_TECHO = String(params.CoberturaCompletaTecho || "true") === "true";
+    const FILAS_EXTRA_ARRIBA = Math.max(
+        0,
+        Math.min(4, Number(params.FilasExtraArriba || 1))
+    );
     const DEBUG = String(params.ModoDebug || "false") === "true";
 
     function logDex(...args) {
@@ -101,6 +188,57 @@
 
     function esPuente(regionId) {
         return regionId === REGION_PUENTE;
+    }
+
+    function esTechoForzado(regionId) {
+        return regionId === REGION_TECHO_FORZADO;
+    }
+
+    function tilesInferioresConEventos(mapa, x, y) {
+        const tiles = [];
+
+        if (mapa.tileEventsXy) {
+            const eventosTile = mapa.tileEventsXy(x, y);
+
+            for (const evento of eventosTile) {
+                const tileId = evento.tileId();
+
+                if (tileId > 0) {
+                    tiles.push(tileId);
+                }
+            }
+        }
+
+        // Conservamos las dos capas inferiores.
+        // Las capas 2 y 3 son tratadas como la parte visual superior.
+        tiles.push(mapa.tileId(x, y, 1));
+        tiles.push(mapa.tileId(x, y, 0));
+
+        return tiles;
+    }
+
+    function comprobarPasoComoEstrella(mapa, x, y, bit) {
+        const flags = mapa.tilesetFlags();
+        const tiles = tilesInferioresConEventos(mapa, x, y);
+
+        for (const tileId of tiles) {
+            const flag = flags[tileId] || 0;
+
+            // Una estrella real también se ignora al decidir el paso.
+            if ((flag & 0x10) !== 0) {
+                continue;
+            }
+
+            if ((flag & bit) === 0) {
+                return true;
+            }
+
+            if ((flag & bit) === bit) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     function esEspecial(regionId) {
@@ -166,6 +304,114 @@
             evento.setTransparent(!mostrar);
         });
     }
+
+    //-------------------------------------------------------------------------
+    // Techo / estrella forzada por región
+    //-------------------------------------------------------------------------
+
+    const _Tilemap_isOverpassPosition = Tilemap.prototype._isOverpassPosition;
+    Tilemap.prototype._isOverpassPosition = function(mx, my) {
+        const regionId = this._readMapData(mx, my, 5);
+
+        if (esTechoForzado(regionId)) {
+            return true;
+        }
+
+        return _Tilemap_isOverpassPosition.call(this, mx, my);
+    };
+
+    const _Tilemap_addSpot = Tilemap.prototype._addSpot;
+    Tilemap.prototype._addSpot = function(startX, startY, x, y) {
+        _Tilemap_addSpot.call(this, startX, startY, x, y);
+
+        if (!COBERTURA_COMPLETA_TECHO) {
+            return;
+        }
+
+        const mx = startX + x;
+        const my = startY + y;
+        const regionId = this._readMapData(mx, my, 5);
+        const esCasillaTecho = esTechoForzado(regionId);
+
+        let filaBuffer = 0;
+
+        if (!esCasillaTecho && FILAS_EXTRA_ARRIBA > 0) {
+            for (let offset = 1; offset <= FILAS_EXTRA_ARRIBA; offset++) {
+                const regionDebajo = this._readMapData(mx, my + offset, 5);
+
+                if (esTechoForzado(regionDebajo)) {
+                    filaBuffer = offset;
+                    break;
+                }
+            }
+        }
+
+        if (!esCasillaTecho && filaBuffer === 0) {
+            return;
+        }
+
+        const dx = x * this.tileWidth;
+        const dy = y * this.tileHeight;
+        const tileId0 = this._readMapData(mx, my, 0);
+        const tileId1 = this._readMapData(mx, my, 1);
+        const tileId2 = this._readMapData(mx, my, 2);
+        const tileId3 = this._readMapData(mx, my, 3);
+
+        // En la propia casilla 250, MZ ya envía las capas 2 y 3 arriba
+        // mediante _isOverpassPosition. Sólo duplicamos 0 y 1.
+        if (esCasillaTecho) {
+            this._addTile(this._upperLayer, tileId0, dx, dy);
+            this._addTile(this._upperLayer, tileId1, dx, dy);
+        } else {
+            // En las filas de colchón situadas encima, duplicamos todas las
+            // capas porque esas casillas no tienen región 250 propia.
+            this._addTile(this._upperLayer, tileId0, dx, dy);
+            this._addTile(this._upperLayer, tileId1, dx, dy);
+            this._addTile(this._upperLayer, tileId2, dx, dy);
+            this._addTile(this._upperLayer, tileId3, dx, dy);
+        }
+
+        logDex(
+            "Cobertura completa",
+            "x:", mx,
+            "y:", my,
+            "techo:", esCasillaTecho,
+            "buffer:", filaBuffer,
+            "tiles:", [tileId0, tileId1, tileId2, tileId3]
+        );
+    };
+
+    const _Game_Map_checkPassage = Game_Map.prototype.checkPassage;
+    Game_Map.prototype.checkPassage = function(x, y, bit) {
+        const regionId = this.regionId(x, y);
+
+        if (esTechoForzado(regionId)) {
+            if (FORZAR_PASO_TECHO) {
+                logDex(
+                    "Paso techo forzado",
+                    "x:", x,
+                    "y:", y,
+                    "bit:", bit,
+                    "resultado: true"
+                );
+                return true;
+            }
+
+            if (TECHO_IGNORA_BLOQUEO) {
+                const resultado = comprobarPasoComoEstrella(this, x, y, bit);
+                logDex(
+                    "Paso techo por suelo inferior",
+                    "x:", x,
+                    "y:", y,
+                    "bit:", bit,
+                    "resultado:", resultado
+                );
+                return resultado;
+            }
+        }
+
+        return _Game_Map_checkPassage.call(this, x, y, bit);
+    };
 
     const _Game_Player_refresh = Game_Player.prototype.refresh;
     Game_Player.prototype.refresh = function() {
@@ -262,7 +508,19 @@
     const _Game_Map_setup = Game_Map.prototype.setup;
     Game_Map.prototype.setup = function(mapId) {
         _Game_Map_setup.call(this, mapId);
-        setTimeout(() => actualizarEventosVisualesPuente(), 0);
+
+        setTimeout(() => {
+            actualizarEventosVisualesPuente();
+
+            const scene = SceneManager._scene;
+            const tilemap = scene && scene._spriteset
+                ? scene._spriteset._tilemap
+                : null;
+
+            if (tilemap && tilemap.refresh) {
+                tilemap.refresh();
+            }
+        }, 0);
     };
 
     const _Game_Player_update = Game_Player.prototype.update;
