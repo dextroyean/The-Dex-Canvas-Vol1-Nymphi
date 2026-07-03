@@ -49,3 +49,9 @@ Cuevas:
 
 Templos:
 <TimeMode: pause>
+
+\B[1] = normal
+\B[2] = pensamiento
+\B[3] = sorpresa
+\B[4] = grito
+\B[5] = susurro
