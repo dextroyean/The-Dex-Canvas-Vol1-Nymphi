@@ -3,8 +3,8 @@
 Items: ¡Obtienes \C[9]1 pocion\C[0]!
 
 
-Nombre de Nymphi: \C[30]\N[1]\C[0] - \C[30]\N[1]
-Nombre de Yoss: \C[27]\N[2]\C[0] - \C[27]\N[2]
+Nombre de Nymphi: \C[30]\N[1]\C[0] - \C[30]\N[1] - \B[1]\C[30]\N[1]
+Nombre de Yoss: \C[27]\N[2]\C[0] - \C[27]\N[2] - \B[1]\C[27]\N[2]
 
 Código de texto	Descripción
 \V[n]	Será reemplazado por el valor de la variable.
@@ -28,6 +28,7 @@ $	Abre la ventana dorada.
 $gameVariables.setValue(5, 1)
 $gameVariables.value(2)
 
+--------------Luz----------------
 
 Sylverain exterior:
 <TimeMode: global>
@@ -50,8 +51,25 @@ Cuevas:
 Templos:
 <TimeMode: pause>
 
+<Farola>  <Farola: cold>  <Farola: small>
+<Luminaria>
+<Ventana>  <Ventana: moon>
+<Fogata>
+<Vela>
+<Antorcha>
+<CristalViento>
+<CristalHielo>
+<CristalFuego>
+
+<LuzHorario: noche>
+<LuzHorario: tarde,noche>
+<LuzHorario: siempre>
+
+------------Burbujas--------------
+
 \B[1] = normal
 \B[2] = pensamiento
 \B[3] = sorpresa
 \B[4] = grito
 \B[5] = susurro
+

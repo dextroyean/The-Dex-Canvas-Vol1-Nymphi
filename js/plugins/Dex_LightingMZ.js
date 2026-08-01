@@ -1,6 +1,6 @@
 /*:
  * @target MZ
- * @plugindesc Dex_LightingMZ v1.4 - Iluminación ambiental simple e intuitiva generada por código.
+ * @plugindesc Dex_LightingMZ v1.6 - Iluminación ambiental simple e intuitiva generada por código.
  * @author Dextroyean y Jaime
  *
  * @param EnabledDefault
@@ -36,6 +36,26 @@
  * @text Modo Debug
  * @type boolean
  * @default false
+ *
+ * @param LightOverlapMode
+ * @text Superposición de Luces
+ * @desc softCap reduce brillo cuando varias luces se cruzan. additive es el modo clásico. normal evita acumulación fuerte.
+ * @type select
+ * @option Suavizar acumulación
+ * @value softCap
+ * @option Clásico aditivo
+ * @value additive
+ * @option Sin acumulación fuerte
+ * @value normal
+ * @default softCap
+ *
+ * @param OverlapStrength
+ * @text Fuerza Anti-Saturación
+ * @desc 0 = no reduce. 100 = reduce mucho el brillo en cruces de luces.
+ * @type number
+ * @min 0
+ * @max 100
+ * @default 70
  *
  * @command SetAmbient
  * @text Cambiar Ambiente
@@ -345,7 +365,7 @@
  * @text Refrescar Luces
  *
  * @help
- * Dex_LightingMZ v1.4
+ * Dex_LightingMZ v1.6
  * ============================================================================
  * Plugin nuevo para RPG Maker MZ.
  * No necesita imágenes. Las luces se generan por código.
@@ -380,6 +400,43 @@
  * v1.4:
  * Agrega luces de entrada de cueva que leen la hora global. Así la entrada se
  * ve clara de día, cálida de tarde y tenue/azulada de noche.
+ *
+ * v1.5:
+ * Agrega luces automáticas por horario y etiquetas rápidas para farolas,
+ * luminarias, ventanas, fogatas, velas, antorchas y cristales.
+ *
+ * v1.6:
+ * Agrega control de superposición de luces para evitar que zonas con varias
+ * farolas se quemen demasiado. Nuevo parámetro: Superposición de Luces.
+ *
+ * HORARIO:
+ * <LightTime: night>
+ * <LightTime: afternoon,night>
+ * <LuzHorario: noche>
+ * <LuzHorario: tarde,noche>
+ * <LightTime: always>
+ * <LuzHorario: siempre>
+ *
+ * ETIQUETAS RÁPIDAS:
+ * <Farola>
+ * <Farola: warm>
+ * <Farola: cold>
+ * <Farola: small>
+ * <Luminaria>
+ * <Ventana>
+ * <Ventana: warm>
+ * <Ventana: cold>
+ * <Ventana: moon>
+ * <Fogata>
+ * <Vela>
+ * <Antorcha>
+ * <CristalViento>
+ * <CristalHielo>
+ * <CristalFuego>
+ *
+ * Por defecto:
+ * - Farola / Luminaria / Ventana: tarde y noche.
+ * - Fogata / Vela / Antorcha / Cristales: siempre.
  *
  * ENTRADA DE CUEVA:
  * <EntranceLight: outside>
@@ -497,7 +554,9 @@ const DEFAULTS = {
     ambientOpacity: clamp(num("DefaultAmbientOpacity", 170), 0, 255),
     fadeFrames: Math.max(0, num("DefaultFadeFrames", 60)),
     playerPreset: txt("PlayerLightPreset", ""),
-    debug: boo("DebugMode", false)
+    debug: boo("DebugMode", false),
+    overlapMode: txt("LightOverlapMode", "softCap"),
+    overlapStrength: clamp(num("OverlapStrength", 70) / 100, 0, 1)
 };
 
 const log = (...args) => { if (DEFAULTS.debug) console.log("[Dex_LightingMZ]", ...args); };
@@ -523,6 +582,62 @@ function textBool(v, d) {
     if (["false","off","no","0"].includes(s)) return false;
     return d;
 }
+
+function normalizeLightTimeToken(value) {
+    const s = String(value || "").trim().toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "");
+
+    if (!s || ["always", "all", "siempre", "todo", "todos", "any"].includes(s)) return "always";
+    if (["day", "dia", "manana"].includes(s)) return "day";
+    if (["afternoon", "tarde", "sunset", "atardecer"].includes(s)) return "afternoon";
+    if (["dusk", "anochecer", "ocaso"].includes(s)) return "dusk";
+    if (["night", "noche"].includes(s)) return "night";
+    if (["deepnight", "medianoche", "deep"].includes(s)) return "deepNight";
+    if (["dawn", "amanecer"].includes(s)) return "dawn";
+
+    return s;
+}
+
+function normalizeLightTimeRule(value) {
+    if (value === undefined || value === null || String(value).trim() === "") return "";
+    const raw = String(value).trim();
+
+    if (/^(always|all|siempre|todo|todos)$/i.test(raw)) return "";
+
+    const parts = raw.split(/[,;/|]+/).map(normalizeLightTimeToken).filter(Boolean);
+    if (!parts.length || parts.includes("always")) return "";
+
+    return [...new Set(parts)].join(",");
+}
+
+function currentPhaseFromProgress(progress) {
+    const p = ((Number(progress || 0) % 1) + 1) % 1;
+
+    if (p < 0.14) return "dawn";
+    if (p < 0.50) return "day";
+    if (p < 0.70) return "afternoon";
+    if (p < 0.82) return "dusk";
+    if (p < 0.92) return "night";
+
+    return "deepNight";
+}
+
+function phaseMatchesRule(phase, rule) {
+    rule = normalizeLightTimeRule(rule);
+    if (!rule) return true;
+
+    const tokens = rule.split(",").map(normalizeLightTimeToken);
+
+    if (tokens.includes(phase)) return true;
+    if (tokens.includes("night") && ["dusk", "night", "deepNight"].includes(phase)) return true;
+    if (tokens.includes("afternoon") && ["afternoon", "dusk"].includes(phase)) return true;
+    if (tokens.includes("day") && phase === "day") return true;
+    if (tokens.includes("dawn") && phase === "dawn") return true;
+
+    return false;
+}
+
 function tag(text, names) {
     names = Array.isArray(names) ? names : [names];
     for (const name of names) {
@@ -572,9 +687,13 @@ const PRESETS = {
     echoHope:{radius:260,color:"#ffe28a",opacity:210,softness:1,offsetX:0,offsetY:-12,flicker:"soft",pulse:"soft",pulseAmount:.045,pulseSpeed:.026},
     moonSoft:{radius:560,color:"#b8d4ff",opacity:145,softness:1,offsetX:0,offsetY:-32,flicker:"none",pulse:"none",pulseAmount:.02,pulseSpeed:.015},
     firefly:{radius:105,color:"#dfff8a",opacity:185,softness:1,offsetX:0,offsetY:-22,flicker:"soft",pulse:"magic",pulseAmount:.11,pulseSpeed:.05},
-    windowWarm:{radius:140,width:230,height:105,color:"#ffd18a",opacity:170,softness:1,offsetX:0,offsetY:-18,flicker:"soft",pulse:"soft",pulseAmount:.020,pulseSpeed:.020,rotation:0},
-    windowCold:{radius:140,width:230,height:105,color:"#9fc8ff",opacity:145,softness:1,offsetX:0,offsetY:-18,flicker:"none",pulse:"soft",pulseAmount:.015,pulseSpeed:.016,rotation:0},
-    windowMoon:{radius:160,width:260,height:115,color:"#b8d4ff",opacity:130,softness:1,offsetX:0,offsetY:-18,flicker:"none",pulse:"none",pulseAmount:.000,pulseSpeed:.000,rotation:0},
+    streetLamp:{radius:210,color:"#ffd28a",opacity:205,softness:.95,offsetX:0,offsetY:-34,flicker:"soft",pulse:"soft",pulseAmount:.018,pulseSpeed:.018,timeRule:"afternoon,night"},
+    streetLampSmall:{radius:165,color:"#ffd28a",opacity:185,softness:.96,offsetX:0,offsetY:-30,flicker:"soft",pulse:"soft",pulseAmount:.014,pulseSpeed:.016,timeRule:"afternoon,night"},
+    streetLampCold:{radius:220,color:"#b8d4ff",opacity:175,softness:.98,offsetX:0,offsetY:-34,flicker:"none",pulse:"soft",pulseAmount:.012,pulseSpeed:.014,timeRule:"afternoon,night"},
+    lantern:{radius:175,color:"#ffc982",opacity:195,softness:.94,offsetX:0,offsetY:-28,flicker:"soft",pulse:"soft",pulseAmount:.018,pulseSpeed:.020,timeRule:"afternoon,night"},
+    windowWarm:{radius:140,width:230,height:105,color:"#ffd18a",opacity:170,softness:1,offsetX:0,offsetY:-18,flicker:"soft",pulse:"soft",pulseAmount:.020,pulseSpeed:.020,rotation:0,timeRule:"afternoon,night"},
+    windowCold:{radius:140,width:230,height:105,color:"#9fc8ff",opacity:145,softness:1,offsetX:0,offsetY:-18,flicker:"none",pulse:"soft",pulseAmount:.015,pulseSpeed:.016,rotation:0,timeRule:"afternoon,night"},
+    windowMoon:{radius:160,width:260,height:115,color:"#b8d4ff",opacity:130,softness:1,offsetX:0,offsetY:-18,flicker:"none",pulse:"none",pulseAmount:.000,pulseSpeed:.000,rotation:0,timeRule:"night"},
     caveEntrance:{radius:180,width:130,height:340,color:"#e8f2ff",opacity:220,softness:1,offsetX:0,offsetY:80,flicker:"none",pulse:"soft",pulseAmount:.012,pulseSpeed:.012,rotation:0,entranceMode:"outside"}
 };
 const ALIAS = {
@@ -585,7 +704,13 @@ const ALIAS = {
     ventanacalida:"windowWarm", ventanacálida:"windowWarm", calida:"windowWarm", cálida:"windowWarm", warm:"windowWarm",
     ventanafria:"windowCold", ventanafría:"windowCold", fria:"windowCold", fría:"windowCold", cold:"windowCold",
     ventanaluna:"windowMoon", lunares:"windowMoon", moon:"windowMoon", moonlight:"windowMoon",
-    entradacueva:"caveEntrance", entrada:"caveEntrance", caveentrance:"caveEntrance", exterior:"caveEntrance", outside:"caveEntrance"
+    entradacueva:"caveEntrance", entrada:"caveEntrance", caveentrance:"caveEntrance", exterior:"caveEntrance", outside:"caveEntrance",
+    farola:"streetLamp", farol:"streetLamp", luminaria:"streetLamp", lampara:"streetLamp", lámpara:"streetLamp",
+    farolapequena:"streetLampSmall", farolapequeña:"streetLampSmall", farolsmall:"streetLampSmall", smalllamp:"streetLampSmall",
+    farolafria:"streetLampCold", farolafría:"streetLampCold", farolcold:"streetLampCold",
+    linterna:"lantern", lantern:"lantern",
+    ventana:"windowWarm", ventanacasa:"windowWarm", housewindow:"windowWarm",
+    cristalviento:"magicWind", cristalhielo:"magicIce", cristalfuego:"magicFire"
 };
 const AMBIENT_PRESETS = {
     day:{color:"#dfefff", opacity:20},
@@ -618,6 +743,25 @@ function ambientPresetName(name) {
     }
 
     return "day";
+}
+
+function streetLampPresetName(value) {
+    const raw = String(value || "warm").trim();
+    const compact = raw.replace(/\s+/g,"").replace(/[_-]+/g,"").toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    if (["small", "pequena", "pequeña", "chica", "mini"].includes(compact)) return "streetLampSmall";
+    if (["cold", "fria", "fría", "azul", "blue"].includes(compact)) return "streetLampCold";
+    if (["lantern", "linterna"].includes(compact)) return "lantern";
+    if (["warm", "calida", "cálida", "dorada", "dorado", "amarilla", "yellow"].includes(compact)) return "streetLamp";
+
+    return presetName(raw);
+}
+
+function quickTagValue(text, names, fallback) {
+    const v = tag(text, names);
+    if (v !== null) return v;
+    return hasTag(text, names) ? fallback : null;
 }
 
 function windowPresetName(value) {
@@ -657,6 +801,8 @@ function makeConfig(name, o) {
     if (o.pulseAmount !== null && o.pulseAmount !== undefined) c.pulseAmount = Number(o.pulseAmount);
     if (o.pulseSpeed !== null && o.pulseSpeed !== undefined) c.pulseSpeed = Number(o.pulseSpeed);
     if (o.switchId !== null && o.switchId !== undefined) c.switchId = Number(o.switchId);
+    if (o.timeRule !== null && o.timeRule !== undefined) c.timeRule = normalizeLightTimeRule(o.timeRule);
+    else c.timeRule = normalizeLightTimeRule(c.timeRule || "");
     c.enabled = o.enabled !== undefined ? !!o.enabled : true;
     c.radius = Math.max(1, Number(c.radius || 240));
     c.width = Math.max(1, Number(c.width || c.radius * 2));
@@ -687,8 +833,76 @@ function lightOverridesFromText(comments, prefix) {
         pulse: tagText(comments, [prefix + "Pulse", "LuzPulso"]),
         pulseAmount: tagNum(comments, [prefix + "PulseAmount", "LuzPulsoCantidad"], null),
         pulseSpeed: tagNum(comments, [prefix + "PulseSpeed", "LuzPulsoVelocidad"], null),
-        switchId: tagNum(comments, [prefix + "Switch", "LuzInterruptor"], 0)
+        switchId: tagNum(comments, [prefix + "Switch", "LuzInterruptor"], 0),
+        timeRule: tagText(comments, [prefix + "Time", prefix + "Schedule", prefix + "Only", "LuzHorario", "LuzTiempo", "HorarioLuz"])
     };
+}
+
+function quickConfigFromComments(comments) {
+    let raw = quickTagValue(comments, ["StreetLamp", "Farola", "Farol", "Luminaria", "LampPost"], "warm");
+
+    if (raw !== null) {
+        const enabledRaw = tag(comments, ["LightEnabled","LuzActivada"]);
+        const overrides = lightOverridesFromText(comments, "Light");
+        overrides.enabled = enabledRaw === null ? true : textBool(enabledRaw, true);
+        return makeConfig(streetLampPresetName(raw), overrides);
+    }
+
+    raw = quickTagValue(comments, ["HouseWindow", "VentanaCasa", "Ventana"], "warm");
+
+    if (raw !== null) {
+        const enabledRaw = tag(comments, ["LightEnabled","LuzActivada"]);
+        const overrides = lightOverridesFromText(comments, "Light");
+        overrides.enabled = enabledRaw === null ? true : textBool(enabledRaw, true);
+        return makeConfig(windowPresetName(raw), overrides);
+    }
+
+    raw = quickTagValue(comments, ["Campfire", "Fogata"], "campfire");
+
+    if (raw !== null) {
+        const enabledRaw = tag(comments, ["LightEnabled","LuzActivada"]);
+        const overrides = lightOverridesFromText(comments, "Light");
+        overrides.enabled = enabledRaw === null ? true : textBool(enabledRaw, true);
+        return makeConfig("campfire", overrides);
+    }
+
+    raw = quickTagValue(comments, ["Candle", "Vela"], "candle");
+
+    if (raw !== null) {
+        const enabledRaw = tag(comments, ["LightEnabled","LuzActivada"]);
+        const overrides = lightOverridesFromText(comments, "Light");
+        overrides.enabled = enabledRaw === null ? true : textBool(enabledRaw, true);
+        return makeConfig("candle", overrides);
+    }
+
+    raw = quickTagValue(comments, ["Torch", "Antorcha"], "torch");
+
+    if (raw !== null) {
+        const enabledRaw = tag(comments, ["LightEnabled","LuzActivada"]);
+        const overrides = lightOverridesFromText(comments, "Light");
+        overrides.enabled = enabledRaw === null ? true : textBool(enabledRaw, true);
+        return makeConfig("torch", overrides);
+    }
+
+    if (hasTag(comments, ["WindCrystal", "CristalViento"])) {
+        const overrides = lightOverridesFromText(comments, "Light");
+        overrides.enabled = true;
+        return makeConfig("magicWind", overrides);
+    }
+
+    if (hasTag(comments, ["IceCrystal", "CristalHielo"])) {
+        const overrides = lightOverridesFromText(comments, "Light");
+        overrides.enabled = true;
+        return makeConfig("magicIce", overrides);
+    }
+
+    if (hasTag(comments, ["FireCrystal", "CristalFuego"])) {
+        const overrides = lightOverridesFromText(comments, "Light");
+        overrides.enabled = true;
+        return makeConfig("magicFire", overrides);
+    }
+
+    return null;
 }
 
 function configFromComments(comments) {
@@ -702,6 +916,9 @@ function configFromComments(comments) {
 
         return makeConfig("caveEntrance", overrides);
     }
+
+    const quick = quickConfigFromComments(comments);
+    if (quick) return quick;
 
     const windowRaw = tag(comments, ["WindowLight", "LuzVentana"]);
 
@@ -747,7 +964,8 @@ function playerLightFromText(text) {
         pulse: tagText(text, ["PlayerLightPulse", "LuzJugadorPulso"]),
         pulseAmount: tagNum(text, ["PlayerLightPulseAmount", "LuzJugadorPulsoCantidad"], null),
         pulseSpeed: tagNum(text, ["PlayerLightPulseSpeed", "LuzJugadorPulsoVelocidad"], null),
-        switchId: tagNum(text, ["PlayerLightSwitch", "LuzJugadorInterruptor"], 0)
+        switchId: tagNum(text, ["PlayerLightSwitch", "LuzJugadorInterruptor"], 0),
+        timeRule: tagText(text, ["PlayerLightTime", "LuzJugadorHorario", "LuzJugadorTiempo"])
     };
 
     return makeConfig(raw, overrides);
@@ -1061,6 +1279,18 @@ M.dynamicLightConfig = function(config) {
     return c;
 };
 
+M.currentPhase = function() {
+    const dn = this.dayNight ? this.dayNight() : null;
+    const progress = dn ? Number(dn.progress || this.phaseProgress("day")) : this.phaseProgress("day");
+    return currentPhaseFromProgress(progress);
+};
+
+M.lightTimeAllowed = function(config) {
+    if (!config || !config.timeRule) return true;
+    return phaseMatchesRule(this.currentPhase(), config.timeRule);
+};
+
+
 M.colorText = function(colorInt) {
     return "#" + Number(colorInt || 0).toString(16).padStart(6, "0");
 };
@@ -1141,6 +1371,24 @@ M.updateDayNightCycle = function() {
     }
 };
 
+M.overlapMode = function() {
+    const s = String(DEFAULTS.overlapMode || "softCap").trim().toLowerCase();
+
+    if (["normal", "none", "noadd", "sinacumulacion", "sinacumulación"].includes(s)) return "normal";
+    if (["add", "additive", "classic", "clasico", "clásico"].includes(s)) return "additive";
+
+    return "softCap";
+};
+
+M.lightSpriteBlendMode = function() {
+    if (this.overlapMode() === "normal") return PIXI.BLEND_MODES.NORMAL;
+    return PIXI.BLEND_MODES.ADD;
+};
+
+M.overlapStrength = function() {
+    return clamp(Number(DEFAULTS.overlapStrength || 0), 0, 1);
+};
+
 M.gradient = function(softness) {
     const key = "s" + Math.round(clamp(Number(softness || 1), .05, 1) * 100);
     if (this._cache[key]) return this._cache[key];
@@ -1179,7 +1427,7 @@ M.pulse = function(c, frame, seed) {
 M.collect = function() {
     const out = [], st = this.state();
     if (st.playerLight && st.playerLight.enabled !== false) {
-        if (!st.playerLight.switchId || $gameSwitches.value(st.playerLight.switchId)) {
+        if ((!st.playerLight.switchId || $gameSwitches.value(st.playerLight.switchId)) && this.lightTimeAllowed(st.playerLight)) {
             out.push({key:"player", config:st.playerLight, character:$gamePlayer});
         }
     }
@@ -1189,6 +1437,7 @@ M.collect = function() {
             const c = ov || ev._dexLightConfig;
             if (!c || c.enabled === false || ev._erased) continue;
             if (c.switchId > 0 && !$gameSwitches.value(c.switchId)) continue;
+            if (!this.lightTimeAllowed(c)) continue;
             out.push({key:"event:"+ev.eventId(), config:c, character:ev});
         }
     }
@@ -1197,6 +1446,7 @@ M.collect = function() {
         const c = sm[id];
         if (!c || c.enabled === false) continue;
         if (c.switchId > 0 && !$gameSwitches.value(c.switchId)) continue;
+        if (!this.lightTimeAllowed(c)) continue;
         out.push({key:"static:"+id, config:c, stat:true});
     }
     return out;
@@ -1248,24 +1498,72 @@ class DexLightingLayer {
         if (!s) {
             s = new Sprite(M.gradient(c.softness));
             s.anchor.set(.5);
-            s.blendMode = PIXI.BLEND_MODES.ADD;
             s._dexSeed = Math.random() * Math.PI * 2;
             this._sprites[key] = s;
             this._lights.addChild(s);
         }
+
         s.bitmap = M.gradient(c.softness);
+        s.blendMode = M.lightSpriteBlendMode();
+
         return s;
+    }
+    overlapRadius(c) {
+        const w = Number(c.width || c.radius * 2 || 1);
+        const h = Number(c.height || c.radius * 2 || 1);
+        return Math.max(1, Math.max(w, h) * .5);
+    }
+    overlapScale(entry, entries) {
+        if (M.overlapMode() !== "softCap") return 1;
+
+        const strength = M.overlapStrength();
+        if (strength <= 0) return 1;
+
+        let pressure = 0;
+        const r1 = this.overlapRadius(entry.c);
+
+        for (const other of entries) {
+            if (other === entry) continue;
+
+            const r2 = this.overlapRadius(other.c);
+            const range = Math.max(1, (r1 + r2) * .72);
+            const dx = entry.p.x - other.p.x;
+            const dy = entry.p.y - other.p.y;
+            const d = Math.sqrt(dx * dx + dy * dy);
+
+            if (d < range) {
+                const t = 1 - d / range;
+                pressure += t * t;
+            }
+        }
+
+        if (pressure <= 0) return 1;
+
+        return clamp(1 / (1 + pressure * strength), .42, 1);
     }
     sync() {
         const active = {};
-        for (const l of M.collect()) {
-            const c = M.dynamicLightConfig(l.config), s = this.spriteFor(l.key, c), p = M.pos(l);
+        const entries = M.collect().map(l => {
+            return {
+                l:l,
+                c:M.dynamicLightConfig(l.config),
+                p:M.pos(l)
+            };
+        });
+
+        for (const entry of entries) {
+            const l = entry.l;
+            const c = entry.c;
+            const p = entry.p;
+            const s = this.spriteFor(l.key, c);
             const flick = M.flicker(c.flicker, M._frame, s._dexSeed);
             const pulse = M.pulse(c, M._frame, s._dexSeed);
+            const overlap = this.overlapScale(entry, entries);
+
             active[l.key] = true;
             s.x = p.x; s.y = p.y;
             s.tint = c.colorInt;
-            s.alpha = clamp(c.opacity/255 * flick, 0, 1);
+            s.alpha = clamp(c.opacity/255 * flick * overlap, 0, 1);
             s.scale.set((c.width || c.radius * 2) / 512 * pulse, (c.height || c.radius * 2) / 512 * pulse);
             s.rotation = Number(c.rotation || 0) * Math.PI / 180;
             s.visible = true;
@@ -1305,7 +1603,8 @@ function commandConfig(args) {
         offsetY:Number(args.offsetY || 999),
         flicker:String(args.flicker || "").trim() || null,
         pulse:String(args.pulse || "").trim() || null,
-        switchId:Number(args.switchId || 0)
+        switchId:Number(args.switchId || 0),
+        timeRule:String(args.timeRule || args.lightTime || "").trim() || null
     };
 }
 function eventIdOf(interpreter, raw) {

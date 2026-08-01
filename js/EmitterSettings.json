@@ -1,0 +1,74 @@
+{
+  "EV008": {
+    "radius": 102,
+    "intensity": 0.5,
+    "softness": 2,
+    "color": "#00d9ff",
+    "offsetX": 0,
+    "offsetY": 0,
+    "spriteAsEmitter": false,
+    "flickerEnabled": true,
+    "flickerSpeed": 2,
+    "flickerIntensity": 0.3
+  },
+  "EV001": {
+    "radius": 213,
+    "intensity": 1,
+    "softness": 1.8,
+    "color": "#00ff08",
+    "offsetX": 0,
+    "offsetY": 0,
+    "spriteAsEmitter": false,
+    "flickerEnabled": true,
+    "flickerSpeed": 2,
+    "flickerIntensity": 0.3
+  },
+  "EV006": {
+    "radius": 151,
+    "intensity": 0.5,
+    "softness": 2,
+    "color": "#ffffff",
+    "offsetX": 0,
+    "offsetY": 0,
+    "spriteAsEmitter": false,
+    "flickerEnabled": true,
+    "flickerSpeed": 2,
+    "flickerIntensity": 0.3
+  },
+  "EV007": {
+    "radius": 102,
+    "intensity": 0.5,
+    "softness": 2,
+    "color": "#00ff08",
+    "offsetX": 0,
+    "offsetY": 0,
+    "spriteAsEmitter": false,
+    "flickerEnabled": true,
+    "flickerSpeed": 2,
+    "flickerIntensity": 0.3
+  },
+  "EV009": {
+    "radius": 100,
+    "intensity": 0.5,
+    "softness": 2,
+    "color": "#ff0000",
+    "offsetX": 0,
+    "offsetY": 0,
+    "spriteAsEmitter": false,
+    "flickerEnabled": true,
+    "flickerSpeed": 2,
+    "flickerIntensity": 0.3
+  },
+  "EV002": {
+    "radius": 150,
+    "intensity": 0.8,
+    "softness": 0.7,
+    "color": "#0040ff",
+    "offsetX": 0,
+    "offsetY": 0,
+    "spriteAsEmitter": false,
+    "flickerEnabled": true,
+    "flickerSpeed": 2,
+    "flickerIntensity": 0.5
+  }
+}

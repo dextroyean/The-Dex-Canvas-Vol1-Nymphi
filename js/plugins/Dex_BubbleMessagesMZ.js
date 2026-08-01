@@ -1,11 +1,11 @@
 /*:
  * @target MZ
- * @plugindesc Dex_BubbleMessagesMZ v1.47 - Mensajes tipo burbuja compacta usando Mostrar Texto normal.
+ * @plugindesc Dex_BubbleMessagesMZ v1.58 - Mensajes tipo burbuja compacta usando Mostrar Texto normal.
  * @author Dextroyean y Jaime
  *
  * @help
  * ============================================================================
- * Dex_BubbleMessagesMZ v1.47
+ * Dex_BubbleMessagesMZ v1.58
  * ============================================================================
  *
  * Mensajes tipo burbuja para RPG Maker MZ.
@@ -15,6 +15,17 @@
  * - No obligar a escribir códigos de escape.
  * - Detectar hablante por nombre, evento o slot de party.
  * - Estilo compacto inspirado en bubbles modernas.
+ *
+ * v1.57:
+ * - Ajusta el nombre estilo referencia: queda fuera pero pegado al globo,
+ *   con contorno negro para mejor lectura.
+ * - El globo se vuelve más delgado y compacto.
+ * - La cara ya no fuerza tanto la altura del globo.
+ * - El texto usa contorno configurable.
+ *
+ * v1.58:
+ * - Corrige recorte de faces dentro del globo compacto.
+ * - Reduce padding interno del modo bubble para que el rostro quepa completo.
  *
  * v1.3:
  * - Nuevo modo visual "smart": burbuja compacta, nombre integrado y rostro
@@ -240,6 +251,48 @@
  * @type text
  * @default #202832
  *
+ * @param NameOutlineColor
+ * @text Contorno del Nombre
+ * @type text
+ * @default rgba(0,0,0,.85)
+ *
+ * @param NameOutlineWidth
+ * @text Grosor Contorno Nombre
+ * @type number
+ * @min 0
+ * @default 4
+ *
+ * @param TextOutlineColor
+ * @text Contorno del Texto
+ * @type text
+ * @default rgba(0,0,0,.40)
+ *
+ * @param TextOutlineWidth
+ * @text Grosor Contorno Texto
+ * @type number
+ * @min 0
+ * @default 2
+ *
+ * @param CompactPadding
+ * @text Padding Compacto
+ * @type number
+ * @min 0
+ * @default 8
+ *
+ * @param CompactNameSpace
+ * @text Espacio Compacto Nombre
+ * @type number
+ * @min 0
+ * @default 18
+ *
+ * @param FaceHeightInfluence
+ * @text Influencia Alto del Rostro
+ * @desc Porcentaje del rostro que puede influir en la altura del globo. Menor = globo más delgado.
+ * @type number
+ * @min 0
+ * @max 100
+ * @default 72
+ *
  * @param DebugMode
  * @text Modo Debug
  * @type boolean
@@ -320,6 +373,13 @@ const D = {
     bubbleFill: String(P.BubbleFill || "#ffffff"),
     bubbleStroke: "transparent",
     textColor: String(P.TextColor || "#202832"),
+    nameOutlineColor: String(P.NameOutlineColor || "rgba(0,0,0,.85)"),
+    nameOutlineWidth: Number(P.NameOutlineWidth || 4),
+    textOutlineColor: String(P.TextOutlineColor || "rgba(0,0,0,.40)"),
+    textOutlineWidth: Number(P.TextOutlineWidth || 2),
+    compactPadding: Number(P.CompactPadding || 8),
+    compactNameSpace: Number(P.CompactNameSpace || 18),
+    faceHeightInfluence: clamp(Number(P.FaceHeightInfluence || 72) / 100, 0, 1),
     debug: String(P.DebugMode || "false") === "true"
 };
 
@@ -400,6 +460,27 @@ function hasBubbleTail() {
 function customBubble() {
     const mode = frameMode();
     return mode === "smart" || mode === "custom";
+}
+
+function bubblePad() {
+    if (!smartFrame()) return D.pad;
+    return Math.max(0, Number(D.compactPadding || 8));
+}
+
+function bubbleNameSpaceValue(hasName) {
+    if (!smartFrame() || !hasName) return 0;
+    return Math.max(0, Number(D.compactNameSpace || 18));
+}
+
+function faceHeightForBubble(win, lineCount, faceSize, hasFace) {
+    if (!hasFace) return 0;
+    if (!smartFrame()) return faceSize;
+
+    const textH = Math.max(1, Number(lineCount || 1)) * win.lineHeight();
+    const minInfluence = Math.max(42, textH + 8);
+    const maxInfluence = faceSize * clamp(D.faceHeightInfluence, 0, 1);
+
+    return Math.min(faceSize, Math.max(minInfluence, maxInfluence));
 }
 
 function comments(list) {
@@ -815,18 +896,40 @@ M.measure = function(win, ctx) {
     const smart = smartFrame();
 
     let max = 0;
+    let maxChars = 0;
+    let totalChars = 0;
 
     for (const l of lines) {
-        max = Math.max(max, win.textWidth(M.clean(l)));
+        const cleanLine = M.clean(l);
+        max = Math.max(max, win.textWidth(cleanLine));
+        maxChars = Math.max(maxChars, cleanLine.length);
+        totalChars += cleanLine.length;
     }
 
+    ctx.textLines = lines.length;
+    ctx.maxLineChars = maxChars;
+    ctx.totalChars = totalChars;
+    ctx.longText = lines.length >= 3 || maxChars >= 34 || totalChars >= 90;
+    ctx.veryLongText = lines.length >= 4 || maxChars >= 46 || totalChars >= 140;
+
     const faceSize = smart ? win.dexFaceSize() : ImageManager.faceWidth;
-    const faceW = face ? faceSize + (smart ? 14 : 20) : 0;
-    const faceH = face ? faceSize : 0;
-    const nameSpace = smart && ctx.speakerName ? D.nameSpace : 0;
-    const tail = customBubble() && hasBubbleTail() ? D.tail : 0;
-    const w = clamp(Math.ceil(max + faceW + D.pad * 2 + 18), ctx.minW, ctx.maxW);
-    const h = Math.ceil(Math.max(lines.length * win.lineHeight(), faceH) + D.pad * 2 + tail + nameSpace);
+    const faceW = face ? faceSize + (smart ? 12 : 20) : 0;
+    const faceH = faceHeightForBubble(win, lines.length, faceSize, face);
+    const nameSpace = bubbleNameSpaceValue(ctx.speakerName);
+    const pad = bubblePad();
+    const tail = customBubble() ? (ctx.style === "thought" ? D.tail + 18 : (hasBubbleTail() ? D.tail : 0)) : 0;
+    const thoughtExtraH = ctx.style === "thought" ? 8 : 0;
+    const screenMax = Math.max(ctx.minW, Graphics.boxWidth - 32);
+    const bubbleMaxW = (() => {
+        if (ctx.style === "thought" && ctx.longText) return Math.min(screenMax, Math.max(ctx.maxW, 720));
+        if (ctx.longText) return Math.min(screenMax, Math.max(ctx.maxW, 760));
+        if (ctx.style === "thought") return Math.min(screenMax, Math.max(ctx.maxW, 660));
+        if (ctx.style === "shout") return Math.min(screenMax, Math.max(ctx.maxW, 640));
+        return Math.min(screenMax, ctx.maxW);
+    })();
+    const bodyH = Math.max(lines.length * win.lineHeight(), faceH);
+    const w = clamp(Math.ceil(max + faceW + pad * 2 + 18), ctx.minW, bubbleMaxW);
+    const h = Math.ceil(bodyH + pad * 2 + tail + nameSpace + thoughtExtraH);
 
     return { w, h };
 };
@@ -861,23 +964,69 @@ function colors(st) {
 }
 
 function drawCloud(ctx, x, y, w, h) {
-    const left = x;
-    const top = y;
-    const right = x + w;
-    const bottom = y + h;
-    const midX = x + w * 0.5;
-    const midY = y + h * 0.54;
+    // Una sola silueta continua. Evita el doble borde interno que aparecía
+    // cuando el cuerpo base y los lóbulos se dibujaban como rutas separadas.
+    const r = Math.min(34, Math.max(18, Math.min(w, h) * 0.20));
+    const amp = Math.min(18, Math.max(8, Math.min(w, h) * 0.08));
+
+    const left = x + amp * 0.65;
+    const right = x + w - amp * 0.65;
+    const top = y + amp * 0.45;
+    const bottom = y + h - amp * 0.45;
 
     ctx.beginPath();
-    ctx.moveTo(left + w * 0.16, bottom - h * 0.18);
-    ctx.quadraticCurveTo(left - w * 0.02, bottom - h * 0.24, left + w * 0.08, midY + h * 0.08);
-    ctx.bezierCurveTo(left - w * 0.02, midY - h * 0.03, left + w * 0.10, top + h * 0.24, left + w * 0.25, top + h * 0.26);
-    ctx.bezierCurveTo(left + w * 0.24, top + h * 0.06, left + w * 0.43, top - h * 0.02, midX - w * 0.06, top + h * 0.14);
-    ctx.bezierCurveTo(midX - w * 0.01, top - h * 0.04, midX + w * 0.22, top + h * 0.02, midX + w * 0.20, top + h * 0.20);
-    ctx.bezierCurveTo(right - w * 0.03, top + h * 0.14, right + w * 0.02, midY - h * 0.02, right - w * 0.05, midY + h * 0.15);
-    ctx.bezierCurveTo(right + w * 0.01, bottom - h * 0.02, midX + w * 0.25, bottom + h * 0.02, midX + w * 0.10, bottom - h * 0.02);
-    ctx.bezierCurveTo(midX + w * 0.05, bottom + h * 0.08, midX - w * 0.16, bottom + h * 0.05, midX - w * 0.17, bottom - h * 0.02);
-    ctx.bezierCurveTo(left + w * 0.22, bottom + h * 0.04, left + w * 0.09, bottom, left + w * 0.16, bottom - h * 0.18);
+
+    // Top-left shoulder
+    ctx.moveTo(left + r * 0.65, top);
+
+    // Top scallops
+    ctx.bezierCurveTo(
+        x + w * 0.18, y - amp * 0.16,
+        x + w * 0.33, y - amp * 0.12,
+        x + w * 0.40, top + amp * 0.18
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.48, y - amp * 0.20,
+        x + w * 0.68, y - amp * 0.10,
+        x + w * 0.73, top + amp * 0.18
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.88, top - amp * 0.12,
+        right + amp * 0.25, top + amp * 0.30,
+        right, y + h * 0.36
+    );
+
+    // Right side
+    ctx.bezierCurveTo(
+        x + w + amp * 0.20, y + h * 0.48,
+        x + w + amp * 0.12, y + h * 0.66,
+        right - amp * 0.06, bottom - amp * 0.18
+    );
+
+    // Bottom scallops
+    ctx.bezierCurveTo(
+        x + w * 0.84, bottom + amp * 0.25,
+        x + w * 0.69, bottom + amp * 0.18,
+        x + w * 0.60, bottom - amp * 0.02
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.53, bottom + amp * 0.28,
+        x + w * 0.35, bottom + amp * 0.18,
+        x + w * 0.28, bottom - amp * 0.02
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.15, bottom + amp * 0.18,
+        left - amp * 0.22, bottom - amp * 0.08,
+        left, y + h * 0.63
+    );
+
+    // Left side
+    ctx.bezierCurveTo(
+        x - amp * 0.12, y + h * 0.50,
+        x + amp * 0.05, y + h * 0.34,
+        left + amp * 0.10, top + amp * 0.24
+    );
+
     ctx.closePath();
 }
 
@@ -941,39 +1090,153 @@ function drawWhisperRings(ctx, x, y, w, h, radius) {
     ctx.restore();
 }
 
-function drawThoughtDots(ctx, x, y, dir, fill, stroke) {
+function drawThoughtDots(ctx, startX, anchorX, y, dir, fill, stroke) {
     ctx.save();
     ctx.fillStyle = fill;
     ctx.strokeStyle = stroke;
-    ctx.lineWidth = 2;
-    const y1 = dir === "up" ? y - 6 : y + 6;
-    const y2 = dir === "up" ? y - 18 : y + 18;
-    ctx.beginPath();
-    ctx.arc(x, y1, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x + 12, y2, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    ctx.lineWidth = 2.2;
+
+    const x1 = startX;
+    const x2 = startX + (anchorX - startX) * 0.55;
+    const x3 = anchorX;
+
+    if (dir === "up") {
+        const y1 = y - 6;
+        const y2 = y - 18;
+        const y3 = y - 30;
+        for (const [xv, yv, rv] of [[x1, y1, 7], [x2, y2, 5], [x3, y3, 3.5]]) {
+            ctx.beginPath();
+            ctx.arc(xv, yv, rv, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+    } else {
+        const y1 = y + 8;
+        const y2 = y + 20;
+        const y3 = y + 32;
+        for (const [xv, yv, rv] of [[x1, y1, 7], [x2, y2, 5], [x3, y3, 3.5]]) {
+            ctx.beginPath();
+            ctx.arc(xv, yv, rv, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
     ctx.restore();
 }
+
+function bubbleVariant(ctxData) {
+    const styleName = String((ctxData && ctxData.style) || "normal");
+    const lines = Number((ctxData && ctxData.textLines) || 0);
+    const total = Number((ctxData && ctxData.totalChars) || 0);
+    const longText = !!(ctxData && ctxData.longText);
+
+    if (styleName === "thought") {
+        return longText || total >= 90 || lines >= 3 ? "thoughtLong" : "thoughtCloud";
+    }
+
+    if (styleName === "shout") {
+        return longText || total >= 80 || lines >= 3 ? "shoutCompact" : "shoutBurst";
+    }
+
+    if (styleName === "surprise") {
+        return longText ? "surpriseClean" : "surpriseClean";
+    }
+
+    return styleName;
+}
+
+
+function drawThoughtLong(ctx, x, y, w, h) {
+    // Variante larga del pensamiento: más parecida a una nube que a un globo redondeado.
+    const amp = Math.min(26, Math.max(14, Math.min(w, h) * 0.12));
+    const side = Math.min(24, Math.max(12, h * 0.16));
+
+    const left = x + 6;
+    const right = x + w - 6;
+    const top = y + 6;
+    const bottom = y + h - 8;
+
+    ctx.beginPath();
+    ctx.moveTo(left + 34, top + 4);
+
+    // parte superior con varios lóbulos
+    ctx.bezierCurveTo(
+        x + w * 0.08, y - amp * 0.10,
+        x + w * 0.18, y - amp * 0.48,
+        x + w * 0.28, top + amp * 0.08
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.36, y - amp * 0.38,
+        x + w * 0.46, y - amp * 0.56,
+        x + w * 0.56, top + amp * 0.02
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.64, y - amp * 0.34,
+        x + w * 0.76, y - amp * 0.42,
+        x + w * 0.84, top + amp * 0.10
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.92, y - amp * 0.10,
+        right + side * 0.20, top + amp * 0.35,
+        right - 4, y + h * 0.28
+    );
+
+    // costado derecho redondeado
+    ctx.bezierCurveTo(
+        right + side, y + h * 0.38,
+        right + side * 0.85, y + h * 0.70,
+        right - 10, bottom - 18
+    );
+
+    // parte inferior con varios lóbulos
+    ctx.bezierCurveTo(
+        x + w * 0.88, bottom + amp * 0.30,
+        x + w * 0.75, bottom + amp * 0.46,
+        x + w * 0.64, bottom - amp * 0.04
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.56, bottom + amp * 0.34,
+        x + w * 0.44, bottom + amp * 0.50,
+        x + w * 0.36, bottom - amp * 0.02
+    );
+    ctx.bezierCurveTo(
+        x + w * 0.28, bottom + amp * 0.28,
+        x + w * 0.16, bottom + amp * 0.38,
+        left + 20, bottom - amp * 0.02
+    );
+
+    // costado izquierdo redondeado
+    ctx.bezierCurveTo(
+        left - side * 0.70, bottom - 6,
+        left - side, y + h * 0.54,
+        left - 2, y + h * 0.26
+    );
+    ctx.bezierCurveTo(
+        left + 4, top + amp * 0.24,
+        left + 14, top + 6,
+        left + 34, top + 4
+    );
+
+    ctx.closePath();
+}
+
 
 function drawBubble(bmp, ctxData, tx, dir) {
     const w = bmp.width;
     const h = bmp.height;
     const ctx = bmp.context;
     const st = ctxData.style;
+    const variant = bubbleVariant(ctxData);
     const c = colors(st);
-    const tail = hasBubbleTail() && st !== "thought" ? D.tail : 0;
-    const p = 6;
-    const nameSpace = ctxData.speakerName ? D.nameSpace : 0;
-    const extraInset = st === "shout" ? 12 : st === "surprise" ? 6 : 0;
+    const tail = st === "thought" ? D.tail + 8 : (hasBubbleTail() ? D.tail : 0);
+    const p = Math.max(4, Math.min(6, bubblePad()));
+    const nameSpace = bubbleNameSpaceValue(ctxData.speakerName);
+    const extraInset = variant === "shoutBurst" ? 12 : variant === "shoutCompact" ? 8 : st === "surprise" ? 6 : 0;
     const ry = (dir === "up" ? tail + p : p) + nameSpace;
     const rh = h - tail - p * 2 - nameSpace;
     const rx = p + extraInset;
     const rw = w - p * 2 - extraInset * 2;
-    const radius = st === "surprise" ? 11 : 15;
+    const radius = variant === "thoughtCompact" || variant === "thoughtLong" ? 28 : st === "surprise" ? 11 : 15;
 
     bmp.clear();
     ctx.save();
@@ -982,10 +1245,16 @@ function drawBubble(bmp, ctxData, tx, dir) {
     ctx.shadowBlur = st === "whisper" ? 10 : 8;
     ctx.shadowOffsetY = 4;
 
-    if (st === "thought") {
+    if (variant === "thoughtCloud") {
         drawCloud(ctx, rx, ry + 2, rw, rh - 4);
-    } else if (st === "shout") {
+    } else if (variant === "thoughtLong") {
+        drawThoughtLong(ctx, rx, ry + 2, rw, rh - 6);
+    } else if (variant === "thoughtCompact") {
+        roundRect(ctx, rx, ry, rw, rh, radius);
+    } else if (variant === "shoutBurst") {
         drawBurst(ctx, rx + 4, ry + 6, rw - 8, rh - 12, 11, 6, 18);
+    } else if (variant === "shoutCompact") {
+        drawBurst(ctx, rx + 6, ry + 8, rw - 12, rh - 16, 6, 2.5, 12);
     } else if (st === "surprise") {
         drawSurpriseBubble(ctx, rx, ry + 2, rw, rh - 4);
     } else {
@@ -998,15 +1267,18 @@ function drawBubble(bmp, ctxData, tx, dir) {
     ctx.shadowColor = "rgba(0,0,0,0)";
     const forceStyleStroke = st === "thought" || st === "surprise" || st === "shout" || st === "whisper";
     const useStroke = forceStyleStroke || (c.s && String(c.s).toLowerCase() !== "transparent" && String(c.s).toLowerCase() !== "none");
-    ctx.lineWidth = useStroke ? c.lw : 0;
+    ctx.lineWidth = useStroke ? (variant === "shoutCompact" ? Math.max(2.5, c.lw - 1) : c.lw) : 0;
     ctx.strokeStyle = useStroke ? rgba(c.s, st === "whisper" ? .72 : .95) : "rgba(0,0,0,0)";
     if (useStroke && ctx.lineWidth > 0) ctx.stroke();
 
     tx = clamp(tx || w / 2, 20, w - 20);
 
     if (st === "thought") {
-        const dotBaseY = dir === "up" ? ry : ry + rh;
-        drawThoughtDots(ctx, tx - 4, dotBaseY, dir, rgba(c.f, c.a), rgba(c.s, .82));
+        const anchorX = clamp(tx, rx + 24, rx + rw - 24);
+        const bodyCenterX = rx + rw / 2;
+        const startX = clamp(anchorX + (bodyCenterX - anchorX) * 0.42, rx + 32, rx + rw - 32);
+        const dotBaseY = dir === "up" ? ry - 2 : ry + rh + 2;
+        drawThoughtDots(ctx, startX, anchorX, dotBaseY, dir, rgba(c.f, c.a), rgba(c.s, .82));
     } else if (tail > 0) {
         ctx.beginPath();
 
@@ -1025,7 +1297,7 @@ function drawBubble(bmp, ctxData, tx, dir) {
         ctx.fill();
         if (useStroke && ctx.lineWidth > 0) {
             ctx.strokeStyle = rgba(c.s, .95);
-            ctx.lineWidth = c.lw;
+            ctx.lineWidth = variant === "shoutCompact" ? Math.max(2.5, c.lw - 1) : c.lw;
             ctx.stroke();
         }
     }
@@ -1039,15 +1311,17 @@ function drawBubble(bmp, ctxData, tx, dir) {
     }
 
     if (ctxData.speakerName) {
-        ctx.shadowColor = "rgba(0,0,0,.25)";
-        ctx.shadowBlur = 2;
+        const nameY = Math.max(16, ry - 4);
+        ctx.shadowColor = "rgba(0,0,0,.35)";
+        ctx.shadowBlur = 1.5;
         ctx.shadowOffsetY = 1;
         ctx.font = "bold 20px GameFont, sans-serif";
         ctx.fillStyle = ctxData.speakerColor || D.nameColor;
-        ctx.strokeStyle = "rgba(255,255,255,.85)";
-        ctx.lineWidth = 3;
-        ctx.strokeText(ctxData.speakerName, 12, 20);
-        ctx.fillText(ctxData.speakerName, 12, 20);
+        ctx.strokeStyle = D.nameOutlineColor;
+        ctx.lineWidth = Math.max(0, Number(D.nameOutlineWidth || 0));
+        ctx.lineJoin = "round";
+        if (ctx.lineWidth > 0) ctx.strokeText(ctxData.speakerName, 12, nameY);
+        ctx.fillText(ctxData.speakerName, 12, nameY);
     }
 
     ctx.restore();
@@ -1121,7 +1395,7 @@ Window_Message.prototype.dexFaceSize = function() {
 };
 
 Window_Message.prototype.dexNameSpace = function() {
-    return smartFrame() && this._dexBubbleCtx && this._dexBubbleCtx.speakerName ? D.nameSpace : 0;
+    return bubbleNameSpaceValue(this._dexBubbleCtx && this._dexBubbleCtx.speakerName);
 };
 
 Window_Message.prototype.dexBack = function() {
@@ -1178,7 +1452,16 @@ Window_Message.prototype.dexHideNativeBubbleParts = function() {
 Window_Message.prototype.dexUpdatePauseSignPlacement = function() {
     if (!this._pauseSignSprite) return;
     this._pauseSignSprite.x = Math.round(this.width / 2);
-    this._pauseSignSprite.y = Math.round(this.height - 8);
+
+    if (this._dexBubbleActive && this._dexBubbleCtx && customBubble()) {
+        const tailSpace = this._dexBubbleCtx.style === "thought" ? D.tail + 8 : (hasBubbleTail() ? D.tail : 0);
+        const nameSpace = this.dexNameSpace();
+        const pad = 6;
+        const bodyBottom = this.height - tailSpace - pad;
+        this._pauseSignSprite.y = Math.round(Math.max(nameSpace + 26, bodyBottom));
+    } else {
+        this._pauseSignSprite.y = Math.round(this.height - 8);
+    }
 };
 
 Window_Message.prototype.dexTextStyle = function() {
@@ -1187,9 +1470,85 @@ Window_Message.prototype.dexTextStyle = function() {
     const c = colors(this._dexBubbleCtx.style);
 
     this.contents.textColor = c.t;
-    this.contents.outlineColor = "rgba(255,255,255,.85)";
-    this.contents.outlineWidth = 4;
+    this.contents.outlineColor = D.textOutlineColor;
+    this.contents.outlineWidth = Math.max(0, Number(D.textOutlineWidth || 0));
 };
+
+
+Window_Message.prototype.dexBubbleTextMaxWidth = function(ctx) {
+    const face = !!($gameMessage.faceName && $gameMessage.faceName());
+    const faceSize = smartFrame() ? this.dexFaceSize() : ImageManager.faceWidth;
+    const faceW = face ? faceSize + (smartFrame() ? 14 : 20) : 0;
+    const screenMax = Math.max(ctx.minW, Graphics.boxWidth - 32);
+    const bubbleMaxW = (() => {
+        if (ctx.style === "thought" && ctx.longText) return Math.min(screenMax, Math.max(ctx.maxW, 720));
+        if (ctx.longText) return Math.min(screenMax, Math.max(ctx.maxW, 760));
+        if (ctx.style === "thought") return Math.min(screenMax, Math.max(ctx.maxW, 660));
+        if (ctx.style === "shout") return Math.min(screenMax, Math.max(ctx.maxW, 640));
+        return Math.min(screenMax, ctx.maxW);
+    })();
+
+    return Math.max(96, bubbleMaxW - faceW - bubblePad() * 2 - 30);
+};
+
+Window_Message.prototype.dexWrapBubbleTexts = function(ctx) {
+    if (!ctx || !customBubble() || !$gameMessage || !$gameMessage._texts) return;
+    if ($gameMessage._dexBubbleWrapped) return;
+
+    const maxTextWidth = this.dexBubbleTextMaxWidth(ctx);
+    const original = ($gameMessage._texts || []).slice();
+    const wrapped = [];
+
+    const cleanWidth = (text) => {
+        const converted = this.convertEscapeCharacters ? this.convertEscapeCharacters(String(text || "")) : String(text || "");
+        return this.textWidth(M.clean(converted));
+    };
+
+    const pushWrappedLine = (line) => {
+        const text = String(line || "");
+        if (!text.trim()) {
+            wrapped.push(text);
+            return;
+        }
+
+        if (cleanWidth(text) <= maxTextWidth) {
+            wrapped.push(text);
+            return;
+        }
+
+        const words = text.split(/(\s+)/);
+        let current = "";
+
+        for (const part of words) {
+            const test = current + part;
+
+            if (current && cleanWidth(test) > maxTextWidth) {
+                wrapped.push(current.trimEnd());
+                current = part.trimStart();
+            } else {
+                current = test;
+            }
+        }
+
+        if (current) wrapped.push(current.trimEnd());
+    };
+
+    for (const line of original) {
+        const parts = String(line || "").split(/\n/);
+        for (const part of parts) pushWrappedLine(part);
+    }
+
+    if (wrapped.length && wrapped.join("\n") !== original.join("\n")) {
+        $gameMessage._texts = wrapped;
+        $gameMessage._dexBubbleWrapped = true;
+        ctx.textLines = wrapped.length;
+        ctx.totalChars = wrapped.join("").length;
+        ctx.maxLineChars = Math.max(...wrapped.map(line => M.clean(line).length), 0);
+        ctx.longText = wrapped.length >= 3 || ctx.maxLineChars >= 34 || ctx.totalChars >= 90;
+        ctx.veryLongText = wrapped.length >= 4 || ctx.maxLineChars >= 46 || ctx.totalChars >= 140;
+    }
+};
+
 
 Window_Message.prototype.dexPrepare = function() {
     const ctx = M.context();
@@ -1202,11 +1561,18 @@ Window_Message.prototype.dexPrepare = function() {
         return;
     }
 
+    if (this._dexSavedPadding == null) {
+        this._dexSavedPadding = this.padding;
+    }
+
     this.dexBack();
 
     if (customBubble()) {
+        this.padding = smartFrame() ? 4 : 8;
+        this.dexWrapBubbleTexts(ctx);
         this.dexHideNativeBubbleParts();
     } else {
+        this.padding = this._dexSavedPadding != null ? this._dexSavedPadding : this.padding;
         this.opacity = 255;
         this.backOpacity = 192;
         this.dexSetNativeFrameVisible(true);
@@ -1222,6 +1588,10 @@ Window_Message.prototype.dexEnd = function() {
 
     if (this._dexBubbleBack) this._dexBubbleBack.visible = false;
 
+    if (this._dexSavedPadding != null) {
+        this.padding = this._dexSavedPadding;
+    }
+
     this.dexSetNativeFrameVisible(true);
     this.opacity = 255;
     this.backOpacity = 192;
@@ -1229,6 +1599,10 @@ Window_Message.prototype.dexEnd = function() {
 
 Window_Message.prototype.dexPlace = function(force) {
     if (!this._dexBubbleActive || !this._dexBubbleCtx) return;
+
+    if (customBubble()) {
+        this.padding = smartFrame() ? 4 : 8;
+    }
 
     const c = this._dexBubbleCtx;
     const target = c.target;
@@ -1330,6 +1704,15 @@ Window_Message.prototype.update = function() {
     }
 };
 
+
+const _Window_Message_numVisibleRows = Window_Message.prototype.numVisibleRows;
+Window_Message.prototype.numVisibleRows = function() {
+    if (this._dexBubbleActive && customBubble() && $gameMessage && $gameMessage._texts) {
+        return Math.max(4, $gameMessage._texts.length);
+    }
+    return _Window_Message_numVisibleRows.call(this);
+};
+
 const _Window_Message_newLineX = Window_Message.prototype.newLineX;
 Window_Message.prototype.newLineX = function(textState) {
     if (this._dexBubbleActive && smartFrame() && $gameMessage.faceName()) {
@@ -1350,7 +1733,7 @@ Window_Message.prototype.drawMessageFace = function() {
         const sx = (faceIndex % 4) * pw;
         const sy = Math.floor(faceIndex / 4) * ph;
         const size = this.dexFaceSize();
-        const dy = this.dexNameSpace();
+        const dy = this.dexNameSpace() + Math.max(0, Math.round(bubblePad() / 2));
 
         this.contents.blt(bitmap, sx, sy, pw, ph, 0, dy, size, size);
         return;
@@ -1391,6 +1774,7 @@ Window_Message.prototype.terminateMessage = function() {
 
     if ($gameMessage) {
         $gameMessage._dexBubbleTargetToken = "";
+        $gameMessage._dexBubbleWrapped = false;
     }
 
     this.dexEnd();

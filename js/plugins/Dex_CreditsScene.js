@@ -4,8 +4,8 @@
 
 /*:
  * @target MZ
- * @plugindesc (v0.3.1) Escena de créditos con scroll, postales, partículas y pantalla final con tecla.
- * @author Dextroyean / Ajustado con ChatGPT
+ * @plugindesc (v0.4.3) Escena de créditos con scroll, postales, partículas y pantalla final con tecla.
+ * @author Dextroyean y Jaime
  *
  * @param Fondo
  * @text Fondo
@@ -59,6 +59,42 @@
  * @off No
  * @desc Permite saltar el scroll con OK/Cancel. Si hay pantalla final, salta hacia ella.
  * @default true
+ *
+ * @param Mantener para Cancelar
+ * @text Mantener para Cancelar
+ * @type boolean
+ * @on Sí
+ * @off No
+ * @desc Si está en Sí, el jugador debe mantener OK/Cancel para cancelar o saltar créditos.
+ * @default true
+ *
+ * @param Frames para Cancelar
+ * @parent Mantener para Cancelar
+ * @text Frames para Cancelar
+ * @type number
+ * @min 1
+ * @desc 60 = 1 segundo. 90 = 1.5 segundos. 120 = 2 segundos.
+ * @default 90
+ *
+ * @param Texto Cancelando
+ * @parent Mantener para Cancelar
+ * @text Texto Cancelando
+ * @type string
+ * @default Cancelando créditos...
+ *
+ * @param Ancho Barra Cancelar
+ * @parent Mantener para Cancelar
+ * @text Ancho Barra Cancelar
+ * @type number
+ * @min 160
+ * @default 520
+ *
+ * @param Alto Barra Cancelar
+ * @parent Mantener para Cancelar
+ * @text Alto Barra Cancelar
+ * @type number
+ * @min 6
+ * @default 18
  *
  * @param Salida
  * @text Salida
@@ -164,7 +200,7 @@
  *
  * @help
  * ============================================================================
- * Dex_CreditsScene v0.3.1
+ * Dex_CreditsScene v0.4.3
  * ============================================================================
  *
  * Crea una escena propia de créditos con:
@@ -175,6 +211,12 @@
  * - Partículas decorativas.
  * - Postales/imágenes acompañando los créditos.
  * - Pantalla final con imagen y espera por tecla.
+ * - Barra gráfica de cancelación por mantener botón.
+ * - Postales/fotos renombradas como creditos1, creditos2, etc.
+ * - Créditos de entrega parcial integrados desde Excel.
+ * - Postales/fotos restauradas como sección visual del scroll.
+ * - Nombre oficial corregido al inicio: Tales of Dex: A Nymphi Story.
+ * - Postales/fotos restauradas como sección visual del scroll.
  *
  * Archivo:
  * js/plugins/Dex_CreditsScene.js
@@ -194,9 +236,9 @@
  *
  * En la lista Dex.CreditsScene.defaultCredits puedes usar:
  *
- * { type: "image", name: "Credits_Bosque", caption: "Bosque Lumaria" }
- * { type: "imageLeft", name: "Credits_Nymphi", caption: "Nymphi" }
- * { type: "imageRight", name: "Credits_Yoss", caption: "Yoss" }
+ * { type: "image", name: "creditos1", caption: "Bosque Lumaria" }
+ * { type: "imageLeft", name: "creditos3", caption: "Nymphi" }
+ * { type: "imageRight", name: "creditos4", caption: "Yoss" }
  *
  * Si name está vacío, el plugin dibuja una postal temporal para pruebas.
  *
@@ -261,6 +303,11 @@ Dex.CreditsScene = Dex.CreditsScene || {};
     Dex.CreditsScene.scrollSpeed = Math.max(0.10, numberParam("Velocidad Scroll", 0.75));
     Dex.CreditsScene.startWait = Math.max(0, numberParam("Espera Inicial", 90));
     Dex.CreditsScene.allowSkip = boolParam("Permitir Saltar", true);
+    Dex.CreditsScene.holdToCancel = boolParam("Mantener para Cancelar", true);
+    Dex.CreditsScene.cancelHoldFrames = Math.max(1, numberParam("Frames para Cancelar", 90));
+    Dex.CreditsScene.cancelText = stringParam("Texto Cancelando", "Cancelando créditos...");
+    Dex.CreditsScene.cancelBarWidth = Math.max(160, numberParam("Ancho Barra Cancelar", 520));
+    Dex.CreditsScene.cancelBarHeight = Math.max(6, numberParam("Alto Barra Cancelar", 18));
     Dex.CreditsScene.exitMode = stringParam("Salida", "title");
     Dex.CreditsScene.particles = boolParam("Particulas", true);
     Dex.CreditsScene.particlesNumber = Math.max(0, numberParam("Numero Particulas", 42));
@@ -277,84 +324,347 @@ Dex.CreditsScene = Dex.CreditsScene || {};
     Dex.CreditsScene.finalDim = Math.max(0, Math.min(255, numberParam("Oscurecer Imagen Final", 50)));
 
     //-------------------------------------------------------------------------
-    // Créditos de prueba
-    // Cambia esta lista cuando tengas los créditos finales.
+    // Créditos de entrega parcial
+    // Lista generada desde Creditos_Nymphi_Wiki_y_Final.xlsx para la entrega parcial.
     //-------------------------------------------------------------------------
 
     Dex.CreditsScene.defaultCredits = [
-        { type: "space", size: 130 },
-
-        { type: "small", text: "THE DEX CANVAS" },
-        { type: "small", text: "presenta" },
+        { type: "space", size: 60 },
+        { type: "subtitle", text: "THE DEX CANVAS" },
         { type: "space", size: 36 },
-
-        { type: "title", text: "Nymphi" },
-        { type: "subtitle", text: "La última ninfa" },
+        { type: "title", text: "Echoes of the Last Nymph" },
         { type: "space", size: 90 },
+        { type: "text", text: "Gracias por acompañar este pequeño viaje lleno de magia, cafe, errores de programacion y muchas otras cosas." },
+        { type: "space", size: 48 },
 
-        { type: "image", name: "", caption: "Postal de prueba: Bosque Lumaria", width: 620, height: 320, label: "BOSQUE LUMARIA" },
-        { type: "space", size: 34 },
+        { type: "section", text: "Frases motivacionales que compartieron" },
+        { type: "space", size: 24 },
+        { type: "image", name: "creditos1", caption: "Kike: Dame un momento", width: 620, height: 320, label: "Kike" },
+        { type: "space", size: 44 },
+        { type: "imageLeft", name: "creditos2", caption: "Dex: El que lea esto se le quema la maruchan", width: 500, height: 285, label: "Dex" },
+        { type: "space", size: 46 },
+        { type: "imageRight", name: "creditos3", caption: "Yoss: (No me respondio asi que creo que quiso decir): Voy a verguiar a kike", width: 460, height: 270, label: "Yoss" },
+        { type: "space", size: 46 },
+        { type: "imageLeft", name: "creditos4", caption: "Ivancin: (Ya era tarde no le pude preguntar u,u) Digamos que dijo que no le gusta el LoL", width: 460, height: 270, label: "Ivan" },
+        { type: "space", size: 46 },
+        { type: "image", name: "creditos5", caption: "Aqui deberia ir Pepe, pero se me olvido y ya no me alcanzo el tiempo", width: 620, height: 320, label: "Pepe" },
+        { type: "space", size: 78 },
+        { type: "section", text: "DIRECCIÓN" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Director del Proyecto" },
+        { type: "name", text: "The Dex Canvas" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Director Creativo" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Productor" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "DISEÑO DEL JUEGO" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Diseñador Principal (Game Designer)" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Diseño de Combate" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Diseño de Jefes" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Diseño de Mobs" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Balance y Progresión" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "NARRATIVA" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Historia Original" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Guion Principal" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Diálogos" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Lore y Worldbuilding" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Revisión Narrativa" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "PROGRAMACIÓN" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Programador Principal" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Programación de Gameplay" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Programación de Sistemas" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Programación de UI/HUD" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Programación de Plugins" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "ARTE" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Director de Arte" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Arte Conceptual" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Ilustraciones" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Diseño de Personajes" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Diseño de Enemigos" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Diseño de Jefes" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "PIXEL ART" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Pixel Artist Principal" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Sprites de Personajes" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Sprites de Enemigos" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Sprites de Jefes" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Tilesets" },
+        { type: "name", text: "RPG Maker Team" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "INTERFAZ" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Diseño de Menús" },
+        { type: "name", text: "Dextroyean" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Diseño UX/UI" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "AUDIO" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Director de Audio" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Compositor Principal" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Música de Combate" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Música Ambiental" },
+        { type: "name", text: "Dextroyean" },
+        { type: "name", text: "Yuufuruka" },
+        { type: "name", text: "Koichi Morita" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Música de Jefes" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Efectos de Sonido" },
+        { type: "name", text: "RPG Maker Team" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Edición de Audio" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "CONTROL DE CALIDAD" },
+        { type: "space", size: 12 },
+        { type: "role", text: "QA Lead" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Testers Internos" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "name", text: "EnriqueArturo98" },
+        { type: "name", text: "PepeOwO" },
+        { type: "name", text: "Ivancin" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "COMUNIDAD" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Comunidad" },
+        { type: "name", text: "Souls & Stars" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "PRODUCCIÓN" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Administración" },
+        { type: "name", text: "Dextroyean" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Coordinación General" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Gestión de Proyecto" },
+        { type: "name", text: "Dextroyean" },
+        { type: "name", text: "Yoss Moto" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "FINANCIACIÓN" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Financiamiento Principal" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 14 },
+        { type: "role", text: "Donadores principales" },
+        { type: "name", text: "Ivancin" },
+        { type: "space", size: 14 },
+        { type: "space", size: 62 },
+        { type: "section", text: "MÚSICA IMPLEMENTADA" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Prologo" },
+        { type: "name", text: "Prologo — Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Tierras de Lúmira" },
+        { type: "name", text: "The overworld — Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "SilverRain" },
+        { type: "name", text: "Silverain — Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Bosque de Lumira" },
+        { type: "name", text: "Moonlit lake — Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Guardian del Manantial" },
+        { type: "name", text: "the guardian of the spring — Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Manantial Lumira" },
+        { type: "name", text: "El manantial que olvida — Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Entrada al templo del viento" },
+        { type: "name", text: "Whispers Before the Gale — Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "space", size: 68 },
+        { type: "section", text: "PLUGINS Y SCRIPTS" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Adaptative Layout" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Aura Sync" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Battle Positions" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Battle Results" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Map name HUD" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Over Pass" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "Tittle Menu" },
+        { type: "name", text: "Dextroyean" },
+        { type: "space", size: 12 },
+        { type: "role", text: "MOG - Action Name" },
+        { type: "name", text: "Moghunter" },
+        { type: "space", size: 12 },
+        { type: "space", size: 68 },
+        { type: "section", text: "RECURSOS E INSPIRACIONES" },
+        { type: "space", size: 16 },
+        { type: "role", text: "Motor" },
+        { type: "name", text: "RPG Maker MZ" },
+        { type: "space", size: 10 },
+        { type: "role", text: "Software de arte" },
+        { type: "name", text: "Photoshop / Affinity" },
+        { type: "space", size: 10 },
+        { type: "role", text: "Inspiraciones" },
+        { type: "name", text: "The Legend of Zelda" },
+        { type: "name", text: "Golden Sun" },
+        { type: "name", text: "Pokémon" },
+        { type: "name", text: "Expedition 33" },
+        { type: "name", text: "Los Simpson" },
+        { type: "name", text: "Bob Esponja" },
+        { type: "name", text: "Malcolm el de en medio" },
+        { type: "space", size: 68 },
+        { type: "section", text: "RECUERDOS DEL DESARROLLO" },
+        { type: "space", size: 24 },
+        { type: "imageLeft", name: "creditos6", caption: "Pruebas, ideas y ajustes del proyecto", width: 500, height: 285, label: "EQUIPO" },
+        { type: "space", size: 46 },
+        { type: "imageRight", name: "creditos7", caption: "Souls & Stars", width: 500, height: 285, label: "COMUNIDAD" },
+        { type: "space", size: 78 },
 
-        { type: "text", text: "Gracias por acompañar este pequeño viaje entre recuerdos, raíces y agua sagrada." },
-        { type: "space", size: 74 },
-
-        { type: "section", text: "Dirección, diseño y desarrollo" },
-        { type: "name", text: "Adrián González" },
-        { type: "role", text: "The Dex Canvas" },
-        { type: "space", size: 70 },
-
-        { type: "imageLeft", name: "", caption: "Postal de prueba: El Manantial Sagrado", width: 470, height: 270, label: "MANANTIAL" },
-        { type: "space", size: 42 },
-
-        { type: "section", text: "Historia y concepto" },
-        { type: "name", text: "Nymphi, la última ninfa" },
-        { type: "text", text: "Una historia sobre un bosque que empieza a olvidar, y una ninfa que aprende a escuchar lo que aún queda vivo." },
-        { type: "space", size: 76 },
-
-        { type: "imageRight", name: "", caption: "Postal de prueba: Recuerdos del bosque", width: 470, height: 270, label: "RECUERDOS" },
-        { type: "space", size: 42 },
-
-        { type: "section", text: "Inspiración especial" },
+        { type: "section", text: "AGRADECIMIENTOS ESPECIALES" },
+        { type: "space", size: 16 },
         { type: "name", text: "Dulce" },
-        { type: "text", text: "Por inspirar el corazón de Nymphi, su ternura, su fuerza y esa luz silenciosa que acompaña incluso cuando el bosque parece perderse." },
-        { type: "space", size: 78 },
-
-        { type: "imageLeft", name: "", caption: "Postal de prueba: Nymphi", width: 430, height: 260, label: "NYMPHI" },
-        { type: "space", size: 42 },
-
-        { type: "section", text: "Agradecimiento especial" },
+        { type: "text", text: "Por inspirar a Nymphi y convertirse en parte del corazón de esta historia." },
+        { type: "space", size: 28 },
         { type: "name", text: "Yoss" },
-        { type: "text", text: "Por tu amistad, tu apoyo y por formar parte de esta aventura. Ojalá al jugarla encuentres un pedacito de ti en esta historia." },
-        { type: "space", size: 78 },
-
-        { type: "imageRight", name: "", caption: "Postal de prueba: Yoss", width: 430, height: 260, label: "YOSS" },
-        { type: "space", size: 42 },
-
-        { type: "section", text: "Personajes principales" },
-        { type: "name", text: "Nymphi" },
-        { type: "role", text: "La última ninfa" },
-        { type: "space", size: 18 },
-        { type: "name", text: "Yoss" },
-        { type: "role", text: "Sanadora y compañera de viaje" },
-        { type: "space", size: 72 },
-
-        { type: "section", text: "Mundo" },
-        { type: "name", text: "Bosque Lumaria" },
-        { type: "role", text: "Primer bosque del viaje" },
-        { type: "space", size: 18 },
-        { type: "name", text: "El Manantial Sagrado" },
-        { type: "role", text: "Donde los recuerdos del bosque aún respiran" },
-        { type: "space", size: 72 },
-
-        { type: "section", text: "Agradecimientos" },
-        { type: "text", text: "A quienes escucharon ideas, vieron pruebas, soportaron cambios raros de último minuto y ayudaron a que este proyecto siguiera caminando." },
+        { type: "text", text: "Por inspirar un personaje basado en la amistad, el apoyo y esos momentos que hacen más ligero cualquier camino." },
+        { type: "space", size: 28 },
+        { type: "name", text: "Souls & Stars" },
+        { type: "text", text: "Por acompañar el desarrollo, las pruebas y las ideas de este mundo." },
         { type: "space", size: 76 },
-
-        { type: "section", text: "Gracias por jugar" },
-        { type: "text", text: "Que los recuerdos del bosque sigan vivos en ti." },
-        { type: "space", size: 92 },
-
-        { type: "subtitle", text: "Fin" },
+        { type: "section", text: "MENSAJE DEL DIRECTOR" },
+        { type: "space", size: 20 },
+        { type: "name", text: "A Dulce," },
+        { type: "space", size: 22 },
+        { type: "text", text: "Gracias por inspirar a Nymphi." },
+        { type: "space", size: 22 },
+        { type: "text", text: "Aunque este mundo está lleno de bosques mágicos, criaturas extrañas y aventuras imposibles, la verdad es que todo comenzó con algo mucho más sencillo: una persona capaz" },
+        { type: "text", text: "de inspirar una historia." },
+        { type: "space", size: 22 },
+        { type: "text", text: "Muchas de las cualidades que hicieron de Nymphi quien es, nacieron de la admiración, el cariño y los recuerdos compartidos a lo largo de este viaje." },
+        { type: "space", size: 22 },
+        { type: "name", text: "Y a Yoss," },
+        { type: "space", size: 22 },
+        { type: "text", text: "Gracias por tu amistad, por tu apoyo y por formar parte de esta aventura incluso antes de que existiera." },
+        { type: "space", size: 22 },
+        { type: "text", text: "Tu personaje fue creado como un pequeño homenaje a alguien que siempre estuvo ahí, aportando alegría, ocurrencias inesperadas y la capacidad de hacer sonreír a los demás" },
+        { type: "text", text: "incluso en los momentos más complicados." },
+        { type: "space", size: 22 },
+        { type: "name", text: "A ambas," },
+        { type: "space", size: 22 },
+        { type: "text", text: "Gracias por convertirse, de una forma u otra, en parte de este mundo." },
+        { type: "space", size: 22 },
+        { type: "text", text: "Espero que al recorrer los caminos de Sylverain, escuchar sus historias y acompañar a Nymphi en esta aventura, puedan encontrar un pequeño fragmento de ustedes mismas" },
+        { type: "text", text: "entre sus páginas." },
+        { type: "space", size: 22 },
+        { type: "text", text: "Y espero, sobre todo, que este juego les recuerde lo importantes que fueron para hacerlo posible." },
+        { type: "space", size: 22 },
+        { type: "name", text: "Con cariño," },
+        { type: "space", size: 22 },
+        { type: "text", text: "Adrián (Dex)" },
+        { type: "space", size: 22 },
+        { type: "text", text: "The Dex Canvas" },
+        { type: "space", size: 22 },
+        { type: "space", size: 80 },
+        { type: "section", text: "GRACIAS POR JUGAR" },
+        { type: "space", size: 22 },
+        { type: "text", text: "Esperamos que hayas disfrutado este pequeño mundo tanto como nosotros disfrutamos creándolo." },
+        { type: "space", size: 28 },
+        { type: "subtitle", text: "Toda historia comienza con una inspiración." },
+        { type: "subtitle", text: "Gracias por formar parte de la mía." },
+        { type: "space", size: 70 },
+        { type: "small", text: "THE DEX CANVAS" },
         { type: "space", size: 260 }
     ];
 
@@ -382,6 +692,7 @@ Dex.CreditsScene = Dex.CreditsScene || {};
         this._finished = false;
         this._totalCreditsHeight = 0;
         this._previousBgm = null;
+        this._cancelHoldCount = 0;
     };
 
     Scene_DexCredits.prototype.create = function() {
@@ -393,6 +704,7 @@ Dex.CreditsScene = Dex.CreditsScene || {};
         this.createCreditsContainer();
         this.createFinalLayer();
         this.createFadeLayer();
+        this.createCancelHoldLayer();
         this.playCreditsMusic();
     };
 
@@ -982,6 +1294,129 @@ Dex.CreditsScene = Dex.CreditsScene || {};
         sprite.scale.y = scale;
     };
 
+
+    //-------------------------------------------------------------------------
+    // Barra de cancelación
+    //-------------------------------------------------------------------------
+
+    Scene_DexCredits.prototype.createCancelHoldLayer = function() {
+        this._cancelHoldSprite = new Sprite(new Bitmap(Graphics.width, 96));
+        this._cancelHoldSprite.x = 0;
+        this._cancelHoldSprite.y = Graphics.height - 118;
+        this._cancelHoldSprite.opacity = 0;
+        this._cancelHoldSprite.visible = false;
+        this.addChild(this._cancelHoldSprite);
+        this.refreshCancelHoldBar(0);
+    };
+
+    Scene_DexCredits.prototype.cancelHoldAllowed = function() {
+        if (!Dex.CreditsScene.holdToCancel) return false;
+
+        if (this._phase === "finalWaitKey" || this._phase === "finalAutoWait") {
+            return true;
+        }
+
+        if (!Dex.CreditsScene.allowSkip) return false;
+
+        return this._phase === "startWait" || this._phase === "scroll";
+    };
+
+    Scene_DexCredits.prototype.cancelHoldPressed = function() {
+        const keyboard = Input.isPressed("ok") || Input.isPressed("cancel");
+        const touch = TouchInput.isPressed ? TouchInput.isPressed() : false;
+        return keyboard || touch;
+    };
+
+    Scene_DexCredits.prototype.updateCancelHold = function() {
+        if (!this._cancelHoldSprite) return;
+
+        if (this.cancelHoldAllowed() && this.cancelHoldPressed()) {
+            this._cancelHoldCount++;
+            const rate = Math.min(1, this._cancelHoldCount / Dex.CreditsScene.cancelHoldFrames);
+
+            this._cancelHoldSprite.visible = true;
+            this._cancelHoldSprite.opacity += (255 - this._cancelHoldSprite.opacity) * 0.22;
+            this.refreshCancelHoldBar(rate);
+
+            if (rate >= 1) {
+                this.completeCancelHold();
+            }
+
+            return;
+        }
+
+        this._cancelHoldCount = 0;
+
+        if (this._cancelHoldSprite.visible) {
+            this._cancelHoldSprite.opacity -= 24;
+            if (this._cancelHoldSprite.opacity <= 0) {
+                this._cancelHoldSprite.opacity = 0;
+                this._cancelHoldSprite.visible = false;
+            }
+        }
+    };
+
+    Scene_DexCredits.prototype.completeCancelHold = function() {
+        this._cancelHoldCount = 0;
+
+        if (this._cancelHoldSprite) {
+            this._cancelHoldSprite.opacity = 0;
+            this._cancelHoldSprite.visible = false;
+        }
+
+        if (this._phase === "finalWaitKey" || this._phase === "finalAutoWait") {
+            this._phase = "fadeOut";
+            return;
+        }
+
+        if (this._phase === "startWait" || this._phase === "scroll") {
+            this.startFinalOrExit();
+        }
+    };
+
+    Scene_DexCredits.prototype.refreshCancelHoldBar = function(rate) {
+        const sprite = this._cancelHoldSprite;
+        if (!sprite || !sprite.bitmap) return;
+
+        const bitmap = sprite.bitmap;
+        const ctx = bitmap.context;
+        const width = Math.min(Graphics.width - 160, Dex.CreditsScene.cancelBarWidth);
+        const height = Dex.CreditsScene.cancelBarHeight;
+        const x = Math.floor((Graphics.width - width) / 2);
+        const y = 46;
+        const fillWidth = Math.floor(width * Math.max(0, Math.min(1, rate)));
+
+        bitmap.clear();
+
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.48)";
+        this.roundRect(ctx, x - 26, 4, width + 52, 84, 18);
+        ctx.fill();
+
+        bitmap.fontFace = $gameSystem.mainFontFace();
+        bitmap.fontSize = 20;
+        bitmap.textColor = "#F4ECFF";
+        bitmap.outlineColor = "rgba(0, 0, 0, 0.95)";
+        bitmap.outlineWidth = 4;
+        bitmap.drawText(Dex.CreditsScene.cancelText, 0, 11, Graphics.width, 28, "center");
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+        this.roundRect(ctx, x, y, width, height, height / 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(200, 162, 255, 0.96)";
+        this.roundRect(ctx, x, y, fillWidth, height, height / 2);
+        ctx.fill();
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+        this.roundRect(ctx, x, y, width, height, height / 2);
+        ctx.stroke();
+        ctx.restore();
+
+        bitmap.baseTexture.update();
+    };
+
     //-------------------------------------------------------------------------
     // Update
     //-------------------------------------------------------------------------
@@ -993,6 +1428,7 @@ Dex.CreditsScene = Dex.CreditsScene || {};
         this.updateImageAnimations();
         this.updateCreditsScroll();
         this.updateFinalScreen();
+        this.updateCancelHold();
         this.updateInput();
     };
 
@@ -1110,7 +1546,14 @@ Dex.CreditsScene = Dex.CreditsScene || {};
 
     Scene_DexCredits.prototype.updateInput = function() {
         const triggered = Input.isTriggered("ok") || Input.isTriggered("cancel") || TouchInput.isTriggered() || TouchInput.isCancelled();
+
         if (!triggered) return;
+
+        // En modo nuevo, OK/Cancel ya no corta de golpe. Debe mantenerse
+        // presionado para llenar la barra de cancelación.
+        if (Dex.CreditsScene.holdToCancel) {
+            return;
+        }
 
         if (this._phase === "finalWaitKey") {
             this._phase = "fadeOut";

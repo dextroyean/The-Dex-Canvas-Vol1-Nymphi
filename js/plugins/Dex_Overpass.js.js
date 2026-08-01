@@ -1,6 +1,6 @@
 /*:
  * @target MZ
- * @plugindesc Dex_Overpass v2.4.1 - Puentes, pasos bajos, caminos secretos y techos superiores forzados por regiones.
+ * @plugindesc Dex_Overpass v2.4.2 - Puentes, pasos bajos, caminos secretos y techos superiores forzados por regiones.
  * @author Dextroyean y Jaime
  *
  * @param RegionBajo
@@ -68,13 +68,31 @@
  * @default 1
  * @desc Cubre también tiles situados encima de la región 250 para ocultar sprites altos.
  *
+ * @param FilasExtraIgnoranRegionesEspeciales
+ * @text Filas extra ignoran regiones especiales
+ * @type boolean
+ * @default true
+ * @desc Evita que la cobertura extra se aplique sobre 251/252/253/254/255. Corrige tiles raros/transparentes arriba de 250.
+ *
+ * @param BloquearBordesTecho
+ * @text Bloquear bordes de Región Techo
+ * @type boolean
+ * @default true
+ * @desc Si está ON, 250 se comporta como zona confinada: no puedes salir/entrar a regiones normales sin entrada permitida.
+ *
+ * @param TechoRegionesEntrada
+ * @text Regiones de entrada/salida a 250
+ * @type text
+ * @default 251,252,253
+ * @desc Regiones desde/hacia las que se permite cruzar con 250. Usa 0,251,252,253 si quieres permitir entrada desde suelo normal.
+ *
  * @param ModoDebug
  * @text Modo Debug
  * @type boolean
  * @default false
  *
  * @help
- * Dex_Overpass v2.4.1
+ * Dex_Overpass v2.4.2
  * ----------------------------------------------------------------------------
  * 250 = Techo / estrella forzada.
  * 251 = Camino bajo / entrada a camino secreto. Activa modo debajo.
@@ -154,6 +172,16 @@
 
     const params = PluginManager.parameters(NOMBRE_PLUGIN);
 
+    function parseRegionList(value, fallback) {
+        const raw = String(value || "").trim();
+        const source = raw ? raw : String((fallback || []).join(","));
+
+        return source
+            .split(/[,;|\s]+/)
+            .map(n => Number(n))
+            .filter(n => Number.isFinite(n) && n >= 0 && n <= 255);
+    }
+
     const REGION_BAJO = Number(params.RegionBajo || 251);
     const REGION_ALTO = Number(params.RegionAlto || 252);
     const REGION_PUENTE = Number(params.RegionPuente || 253);
@@ -167,6 +195,12 @@
     const FILAS_EXTRA_ARRIBA = Math.max(
         0,
         Math.min(4, Number(params.FilasExtraArriba || 1))
+    );
+    const FILAS_EXTRA_IGNORAN_ESPECIALES = String(params.FilasExtraIgnoranRegionesEspeciales || "true") === "true";
+    const BLOQUEAR_BORDES_TECHO = String(params.BloquearBordesTecho || "true") === "true";
+    const TECHO_REGIONES_ENTRADA = parseRegionList(
+        params.TechoRegionesEntrada,
+        [REGION_BAJO, REGION_ALTO, REGION_PUENTE]
     );
     const DEBUG = String(params.ModoDebug || "false") === "true";
 
@@ -247,8 +281,31 @@
             REGION_ALTO,
             REGION_PUENTE,
             REGION_BLOQUEO,
-            REGION_BLOQUEO_ALTO_BAJO
+            REGION_BLOQUEO_ALTO_BAJO,
+            REGION_TECHO_FORZADO
         ].includes(regionId);
+    }
+
+    function esEntradaPermitidaTecho(regionId) {
+        return TECHO_REGIONES_ENTRADA.includes(Number(regionId));
+    }
+
+    function cruceTechoPermitido(actual, destino) {
+        const actualTecho = esTechoForzado(actual);
+        const destinoTecho = esTechoForzado(destino);
+
+        if (!actualTecho && !destinoTecho) return null;
+        if (actualTecho && destinoTecho) return true;
+
+        if (actualTecho && !destinoTecho) {
+            return esEntradaPermitidaTecho(destino);
+        }
+
+        if (!actualTecho && destinoTecho) {
+            return esEntradaPermitidaTecho(actual);
+        }
+
+        return null;
     }
 
     function nivelActual(personaje) {
@@ -332,6 +389,10 @@
         const my = startY + y;
         const regionId = this._readMapData(mx, my, 5);
         const esCasillaTecho = esTechoForzado(regionId);
+
+        if (!esCasillaTecho && FILAS_EXTRA_IGNORAN_ESPECIALES && esEspecial(regionId)) {
+            return;
+        }
 
         let filaBuffer = 0;
 
@@ -464,6 +525,20 @@
 
         if (destino === REGION_BLOQUEO) return false;
         if (destino === REGION_BLOQUEO_ALTO_BAJO) return false;
+
+        if (BLOQUEAR_BORDES_TECHO && (esTechoForzado(actual) || esTechoForzado(destino))) {
+            const permitido = cruceTechoPermitido(actual, destino);
+
+            if (permitido !== null) {
+                logDex(
+                    "Cruce techo 250",
+                    "actual:", actual,
+                    "destino:", destino,
+                    "permitido:", permitido
+                );
+                return permitido;
+            }
+        }
 
         const nivel = nivelActual(this);
 

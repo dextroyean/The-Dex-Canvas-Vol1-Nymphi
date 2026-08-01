@@ -4,7 +4,7 @@
 
 /*:
  * @target MZ
- * @plugindesc [v1.0.1] Barra tipo Limit/Resonancia por actor con HUD de batalla, separadores, costos por notetag y ganancias configurables.
+ * @plugindesc [v2.0.0] Resonancia ahora usa el TP nativo de RPG Maker MZ y lo muestra como RES en HUD, barras y costos.
  * @author Dextroyean y Jaime
  * @url
  *
@@ -23,93 +23,72 @@
  * @type string
  * @default RES
  *
- * @param maxValue
+ * @param renameNativeTp
  * @parent --- General ---
- * @text Máximo Predeterminado
- * @type number
- * @min 1
- * @default 100
- *
- * @param initialValue
- * @parent --- General ---
- * @text Valor Inicial
- * @type number
- * @min 0
- * @default 0
- *
- * @param resetAtBattleStart
- * @parent --- General ---
- * @text Reiniciar al Iniciar Batalla
+ * @text Renombrar TP Nativo
  * @type boolean
  * @on Sí
  * @off No
- * @default false
+ * @desc Cambia la etiqueta visual de la barra TP nativa por la etiqueta corta.
+ * @default true
  *
- * @param resetAtBattleEnd
+ * @param recolorNativeTp
  * @parent --- General ---
- * @text Reiniciar al Terminar Batalla
+ * @text Recolorear TP Nativo
  * @type boolean
  * @on Sí
  * @off No
- * @default false
+ * @desc Cambia los colores de la barra TP nativa para que combine con Resonancia.
+ * @default true
  *
- * @param --- Ganancias ---
+ * @param --- TP ---
  * @default
  *
- * @param gainOnDealtDamage
- * @parent --- Ganancias ---
- * @text Ganancia al Dañar
- * @type number
- * @min 0
- * @default 3
- *
- * @param gainOnReceivedDamage
- * @parent --- Ganancias ---
- * @text Ganancia al Recibir Daño
- * @type number
- * @min 0
- * @default 7
- *
- * @param gainOnHealing
- * @parent --- Ganancias ---
- * @text Ganancia al Curar
- * @type number
- * @min 0
- * @default 5
- *
- * @param damageDivisor
- * @parent --- Ganancias ---
- * @text Daño por Punto Extra
- * @type number
- * @min 0
- * @desc 250 = cada 250 de daño añade +1. 0 = desactivado.
- * @default 250
- *
- * @param allowOutOfBattleGain
- * @parent --- Ganancias ---
- * @text Ganar Fuera de Batalla
+ * @param resetAtBattleStart
+ * @parent --- TP ---
+ * @text Reiniciar TP al Iniciar Batalla
  * @type boolean
  * @on Sí
  * @off No
- * @default true
+ * @desc Si está ON, fija el TP inicial al iniciar combate. Si está OFF, respeta el comportamiento nativo de MZ.
+ * @default false
+ *
+ * @param battleStartTp
+ * @parent --- TP ---
+ * @text TP Inicial en Batalla
+ * @type number
+ * @min 0
+ * @max 100
+ * @default 0
+ *
+ * @param resetAtBattleEnd
+ * @parent --- TP ---
+ * @text Reiniciar TP al Terminar Batalla
+ * @type boolean
+ * @on Sí
+ * @off No
+ * @desc Si está ON, pone el TP en 0 al terminar batalla.
+ * @default false
  *
  * @param --- Visual ---
  * @default
  *
  * @param showInBattleStatus
  * @parent --- Visual ---
- * @text Mostrar en Estado de Batalla
+ * @text Mostrar RES en Estado de Batalla
  * @type boolean
  * @on Sí
  * @off No
- * @default true
+ * @desc Si el sistema ya muestra TP nativo, se renombra esa barra. Si no, dibuja una barra extra.
+ * @default false
  *
  * @param showInMenuStatus
  * @parent --- Visual ---
- * @text Mostrar en Menú
+ * @text Mostrar RES en Menú
  * @type boolean
  * @on Sí
  * @off No
+ * @desc Si el sistema ya muestra TP nativo, se renombra esa barra. Si no, dibuja una barra extra.
  * @default false
  *
  * @param showBattleHud
@@ -118,7 +97,7 @@
  * @type boolean
  * @on Sí
  * @off No
- * @desc Muestra una ventana independiente con Resonancia. Ideal si tu HUD personalizado no usa las barras base de MZ.
+ * @desc Muestra una ventana independiente con la Resonancia/TP del grupo.
  * @default true
  *
  * @param battleHudAutoPosition
@@ -187,10 +166,10 @@
  *
  * @param battleGaugeLineOffset
  * @parent --- Visual ---
- * @text Línea de Barra en Batalla
+ * @text Línea de Barra Extra
  * @type number
  * @min -1
- * @desc -1 = automático. 0 HP, 1 MP, 2 TP, 3 debajo de TP.
+ * @desc -1 = automático. 0 HP, 1 MP, 2 debajo de MP, 3 debajo de TP.
  * @default -1
  *
  * @param gaugeWidth
@@ -256,8 +235,8 @@
  * @default 29
  *
  * @command GainActor
- * @text Ganar Resonancia
- * @desc Suma o resta Resonancia a un actor.
+ * @text Ganar Resonancia/TP
+ * @desc Suma o resta TP a un actor. 0 = líder.
  *
  * @arg actorId
  * @text Actor
@@ -273,8 +252,8 @@
  * @default 10
  *
  * @command SetActor
- * @text Fijar Resonancia
- * @desc Establece la Resonancia exacta de un actor.
+ * @text Fijar Resonancia/TP
+ * @desc Establece el TP exacto de un actor. 0 = líder.
  *
  * @arg actorId
  * @text Actor
@@ -286,12 +265,12 @@
  * @text Cantidad
  * @type number
  * @min 0
- * @max 999
+ * @max 100
  * @default 0
  *
  * @command GainParty
- * @text Ganar Resonancia Grupo
- * @desc Suma o resta Resonancia a todos los miembros activos del grupo.
+ * @text Ganar Resonancia/TP Grupo
+ * @desc Suma o resta TP a todos los miembros activos.
  *
  * @arg amount
  * @text Cantidad
@@ -301,80 +280,70 @@
  * @default 10
  *
  * @command ResetParty
- * @text Reiniciar Resonancia Grupo
- * @desc Pone la Resonancia de todos los miembros activos en 0.
+ * @text Reiniciar Resonancia/TP Grupo
+ * @desc Pone el TP de todos los miembros activos en 0.
  *
  * @command FullParty
- * @text Llenar Resonancia Grupo
- * @desc Llena la Resonancia de todos los miembros activos.
+ * @text Llenar Resonancia/TP Grupo
+ * @desc Llena el TP de todos los miembros activos.
  *
  * @help
  * ==========================================================================
- * Dex_LimitResonance v1.0.1
+ * Dex_LimitResonance v2.0.0
  * ==========================================================================
  *
- * Crea una barra tipo Limit llamada Resonancia para cada actor.
- * No reemplaza el TP y no cambia tus jobs ni skills automáticamente.
- * Incluye un HUD independiente de batalla para layouts personalizados.
- * Sirve como base para separar futuros especiales en un tipo de habilidad
- * llamado, por ejemplo, Especiales.
+ * Cambio importante:
+ * Esta versión YA NO crea un recurso separado.
+ *
+ * Ahora:
+ * TP nativo de RPG Maker MZ = Resonancia
+ *
+ * La barra visual lee:
+ * actor.tp
+ * actor.maxTp()
+ *
+ * Los costos leen:
+ * skill.tpCost
+ *
+ * Esto significa que las habilidades que cuesten TP funcionan con el sistema
+ * normal de RPG Maker MZ, pero visualmente se muestran como RES/Resonancia.
  *
  * ==========================================================================
- * NOTETAGS DE SKILLS
+ * FLUJO RECOMENDADO
  * ==========================================================================
  *
- * <LimitCost: 25>
- * <ResonanceCost: 25>
- *   La skill cuesta esa cantidad de Resonancia.
+ * 1. Base de datos > Términos:
+ *    Cambia "TP" por "RES" o "Resonancia".
  *
- * <LimitGainUser: 10>
- * <ResonanceGainUser: 10>
- *   El usuario gana esa cantidad cada vez que la skill aplica su efecto.
+ * 2. Base de datos > Tipos:
+ *    Asegúrate de tener un tipo de habilidad llamado "Especial".
  *
- * <LimitGainTarget: 10>
- * <ResonanceGainTarget: 10>
- *   El objetivo gana esa cantidad cada vez que la skill aplica su efecto.
+ * 3. Skills:
+ *    Toda skill con Coste TP debe tener Tipo de habilidad = Especial.
  *
- * ==========================================================================
- * NOTETAGS DE ACTORES O CLASES
- * ==========================================================================
- *
- * <LimitMax: 100>
- * <ResonanceMax: 100>
- *   Cambia el máximo de Resonancia para ese actor o clase.
- *
- * <LimitInitial: 0>
- * <ResonanceInitial: 0>
- *   Valor inicial al crear el actor.
- *
- * <LimitGainRate: 1.25>
- * <ResonanceGainRate: 1.25>
- *   Multiplica las ganancias automáticas de Resonancia.
+ * 4. Clases / Actores:
+ *    Agrega el rasgo:
+ *    Añadir tipo de habilidad: Especial
  *
  * ==========================================================================
- * GANANCIAS AUTOMÁTICAS
+ * COMPATIBILIDAD
  * ==========================================================================
  *
- * Por defecto los actores ganan Resonancia al:
- * - Hacer daño.
- * - Recibir daño.
- * - Curar HP a aliados.
- *
- * El parry se conectará después desde Dex_AuraSync. Este plugin ya expone:
+ * Se conservan nombres de comandos y scripts antiguos:
  *
  * Dex.LimitResonance.gainActor(actorId, amount, reason)
  * Dex.LimitResonance.setActor(actorId, amount)
  * Dex.LimitResonance.gainBattler(actor, amount, reason)
  *
- * Ejemplo en script:
- * Dex.LimitResonance.gainActor(1, 12, "parryPerfect")
+ * Pero ahora esos métodos modifican TP nativo.
  *
- * ==========================================================================
- * COMPATIBILIDAD DE GUARDADO
- * ==========================================================================
+ * También se conservan aliases en Game_Actor:
  *
- * El plugin sólo guarda números en Game_Actor. No guarda sprites, bitmaps,
- * ventanas ni objetos gráficos dentro de eventos.
+ * actor.dexLimitValue() -> actor.tp
+ * actor.dexLimitMax()   -> actor.maxTp()
+ *
+ * Los notetags <LimitCost> y <ResonanceCost> ya no son necesarios.
+ * Usa el campo nativo "Coste TP" de la skill.
  * ==========================================================================
  */
 
@@ -428,18 +397,14 @@ Dex.LimitResonance = Dex.LimitResonance || {};
     const SETTINGS = {
         gaugeName: textParam("gaugeName", "Resonancia"),
         gaugeLabel: textParam("gaugeLabel", "RES"),
-        maxValue: Math.max(1, numberParam("maxValue", 100)),
-        initialValue: Math.max(0, numberParam("initialValue", 0)),
+        renameNativeTp: boolParam("renameNativeTp", true),
+        recolorNativeTp: boolParam("recolorNativeTp", true),
+
         resetAtBattleStart: boolParam("resetAtBattleStart", false),
+        battleStartTp: Math.max(0, Math.min(100, numberParam("battleStartTp", 0))),
         resetAtBattleEnd: boolParam("resetAtBattleEnd", false),
 
-        gainOnDealtDamage: Math.max(0, numberParam("gainOnDealtDamage", 3)),
-        gainOnReceivedDamage: Math.max(0, numberParam("gainOnReceivedDamage", 7)),
-        gainOnHealing: Math.max(0, numberParam("gainOnHealing", 5)),
-        damageDivisor: Math.max(0, numberParam("damageDivisor", 250)),
-        allowOutOfBattleGain: boolParam("allowOutOfBattleGain", true),
-
-        showInBattleStatus: boolParam("showInBattleStatus", true),
+        showInBattleStatus: boolParam("showInBattleStatus", false),
         showInMenuStatus: boolParam("showInMenuStatus", false),
         showBattleHud: boolParam("showBattleHud", true),
         battleHudAutoPosition: boolParam("battleHudAutoPosition", true),
@@ -463,97 +428,11 @@ Dex.LimitResonance = Dex.LimitResonance || {};
     };
 
     const Manager = Dex.LimitResonance;
-    Manager.version = "1.0.1";
+    Manager.version = "2.0.0";
     Manager.settings = SETTINGS;
 
     Manager.clamp = function(value, min, max) {
         return Math.max(min, Math.min(max, value));
-    };
-
-    Manager.metaNumber = function(data, names, fallback) {
-        if (!data || !data.meta) return fallback;
-
-        for (let i = 0; i < names.length; i++) {
-            const name = names[i];
-
-            if (Object.prototype.hasOwnProperty.call(data.meta, name)) {
-                const value = Number(data.meta[name]);
-                return Number.isFinite(value) ? value : fallback;
-            }
-        }
-
-        return fallback;
-    };
-
-    Manager.skillLimitCost = function(skill) {
-        return Math.max(0, this.metaNumber(skill, [
-            "LimitCost",
-            "ResonanceCost",
-            "ResonanciaCost",
-            "CostoResonancia"
-        ], 0));
-    };
-
-    Manager.skillGainUser = function(skill) {
-        return this.metaNumber(skill, [
-            "LimitGainUser",
-            "ResonanceGainUser",
-            "ResonanciaGainUser",
-            "GananciaResonanciaUsuario"
-        ], 0);
-    };
-
-    Manager.skillGainTarget = function(skill) {
-        return this.metaNumber(skill, [
-            "LimitGainTarget",
-            "ResonanceGainTarget",
-            "ResonanciaGainTarget",
-            "GananciaResonanciaObjetivo"
-        ], 0);
-    };
-
-    Manager.actorClassData = function(actor) {
-        return actor && actor.currentClass ? actor.currentClass() : null;
-    };
-
-    Manager.actorData = function(actor) {
-        return actor && actor.actor ? actor.actor() : null;
-    };
-
-    Manager.actorLimitMax = function(actor) {
-        const classData = this.actorClassData(actor);
-        const actorData = this.actorData(actor);
-        let value = this.metaNumber(classData, ["LimitMax", "ResonanceMax", "ResonanciaMax"], null);
-
-        if (!Number.isFinite(value)) {
-            value = this.metaNumber(actorData, ["LimitMax", "ResonanceMax", "ResonanciaMax"], SETTINGS.maxValue);
-        }
-
-        return Math.max(1, Math.floor(value));
-    };
-
-    Manager.actorInitialLimit = function(actor) {
-        const classData = this.actorClassData(actor);
-        const actorData = this.actorData(actor);
-        let value = this.metaNumber(classData, ["LimitInitial", "ResonanceInitial", "ResonanciaInitial"], null);
-
-        if (!Number.isFinite(value)) {
-            value = this.metaNumber(actorData, ["LimitInitial", "ResonanceInitial", "ResonanciaInitial"], SETTINGS.initialValue);
-        }
-
-        return this.clamp(Math.floor(value), 0, this.actorLimitMax(actor));
-    };
-
-    Manager.actorGainRate = function(actor) {
-        const classData = this.actorClassData(actor);
-        const actorData = this.actorData(actor);
-        let value = this.metaNumber(classData, ["LimitGainRate", "ResonanceGainRate", "ResonanciaGainRate"], null);
-
-        if (!Number.isFinite(value)) {
-            value = this.metaNumber(actorData, ["LimitGainRate", "ResonanceGainRate", "ResonanciaGainRate"], 1);
-        }
-
-        return Number.isFinite(value) ? Math.max(0, value) : 1;
     };
 
     Manager.actorFromId = function(actorId) {
@@ -566,22 +445,33 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         return $gameParty ? $gameParty.leader() : null;
     };
 
-    Manager.canGainNow = function() {
-        if (SETTINGS.allowOutOfBattleGain) return true;
-        return !!($gameParty && $gameParty.inBattle && $gameParty.inBattle());
+    Manager.tpValue = function(actor) {
+        return actor && Number.isFinite(actor.tp) ? Math.floor(actor.tp) : 0;
+    };
+
+    Manager.tpMax = function(actor) {
+        if (actor && actor.maxTp) return Math.max(1, Math.floor(actor.maxTp()));
+        return 100;
+    };
+
+    Manager.setBattlerTp = function(actor, amount) {
+        if (!actor || !actor.setTp) return 0;
+        const max = this.tpMax(actor);
+        const value = this.clamp(Math.floor(Number(amount || 0)), 0, max);
+        actor.setTp(value);
+        return value;
     };
 
     Manager.gainBattler = function(battler, amount, reason) {
         if (!battler || !battler.isActor || !battler.isActor()) return 0;
-        if (!this.canGainNow()) return 0;
+        if (!battler.gainTp) return 0;
 
         const value = Number(amount || 0);
         if (!Number.isFinite(value) || value === 0) return 0;
 
-        const finalAmount = Math.round(value * this.actorGainRate(battler));
-        battler.gainDexLimitResonance(finalAmount);
+        battler.gainTp(Math.round(value));
         battler._dexLimitLastReason = String(reason || "");
-        return finalAmount;
+        return Math.round(value);
     };
 
     Manager.gainActor = function(actorId, amount, reason) {
@@ -589,33 +479,7 @@ Dex.LimitResonance = Dex.LimitResonance || {};
     };
 
     Manager.setActor = function(actorId, amount) {
-        const actor = this.actorFromId(actorId);
-        if (!actor || !actor.setDexLimitResonance) return;
-        actor.setDexLimitResonance(Number(amount || 0));
-    };
-
-    Manager.extraFromDamage = function(value) {
-        if (SETTINGS.damageDivisor <= 0) return 0;
-        return Math.floor(Math.max(0, Math.abs(Number(value || 0))) / SETTINGS.damageDivisor);
-    };
-
-    Manager.processHpDamage = function(subject, target, value) {
-        const amount = Number(value || 0);
-        if (!Number.isFinite(amount) || amount === 0) return;
-
-        if (amount > 0) {
-            if (subject && subject.isActor && subject.isActor() && target && target.isEnemy && target.isEnemy()) {
-                this.gainBattler(subject, SETTINGS.gainOnDealtDamage + this.extraFromDamage(amount), "dealtDamage");
-            }
-
-            if (target && target.isActor && target.isActor()) {
-                this.gainBattler(target, SETTINGS.gainOnReceivedDamage + this.extraFromDamage(amount), "receivedDamage");
-            }
-        } else if (amount < 0) {
-            if (subject && subject.isActor && subject.isActor() && target && target.isActor && target.isActor()) {
-                this.gainBattler(subject, SETTINGS.gainOnHealing + this.extraFromDamage(amount), "healing");
-            }
-        }
+        return this.setBattlerTp(this.actorFromId(actorId), amount);
     };
 
     Manager.gainParty = function(amount) {
@@ -625,12 +489,16 @@ Dex.LimitResonance = Dex.LimitResonance || {};
 
     Manager.resetParty = function() {
         if (!$gameParty) return;
-        $gameParty.battleMembers().forEach(actor => actor.setDexLimitResonance(0));
+        $gameParty.battleMembers().forEach(actor => this.setBattlerTp(actor, 0));
     };
 
     Manager.fullParty = function() {
         if (!$gameParty) return;
-        $gameParty.battleMembers().forEach(actor => actor.setDexLimitResonance(actor.dexLimitMax()));
+        $gameParty.battleMembers().forEach(actor => this.setBattlerTp(actor, this.tpMax(actor)));
+    };
+
+    Manager.skillLimitCost = function(skill) {
+        return skill ? Math.max(0, Number(skill.tpCost || 0)) : 0;
     };
 
     //-------------------------------------------------------------------------
@@ -658,117 +526,32 @@ Dex.LimitResonance = Dex.LimitResonance || {};
     });
 
     //-------------------------------------------------------------------------
-    // Game_Actor
+    // Compatibility aliases
     //-------------------------------------------------------------------------
 
-    const _Game_Actor_setup = Game_Actor.prototype.setup;
-    Game_Actor.prototype.setup = function(actorId) {
-        _Game_Actor_setup.call(this, actorId);
-        this.initDexLimitResonance();
-    };
-
-    Game_Actor.prototype.initDexLimitResonance = function() {
-        this._dexLimitResonance = Manager.actorInitialLimit(this);
-    };
-
     Game_Actor.prototype.dexLimitMax = function() {
-        return Manager.actorLimitMax(this);
+        return Manager.tpMax(this);
     };
 
     Game_Actor.prototype.dexLimitValue = function() {
-        if (!Number.isFinite(this._dexLimitResonance)) {
-            this._dexLimitResonance = Manager.actorInitialLimit(this);
-        }
-
-        this._dexLimitResonance = Manager.clamp(
-            Math.floor(this._dexLimitResonance),
-            0,
-            this.dexLimitMax()
-        );
-
-        return this._dexLimitResonance;
+        return Manager.tpValue(this);
     };
 
     Game_Actor.prototype.setDexLimitResonance = function(value) {
-        const amount = Number(value || 0);
-        this._dexLimitResonance = Manager.clamp(
-            Math.floor(Number.isFinite(amount) ? amount : 0),
-            0,
-            this.dexLimitMax()
-        );
+        Manager.setBattlerTp(this, value);
     };
 
     Game_Actor.prototype.gainDexLimitResonance = function(amount) {
-        this.setDexLimitResonance(this.dexLimitValue() + Number(amount || 0));
+        Manager.gainBattler(this, amount, "compatibility");
     };
 
     Game_Actor.prototype.canPayDexLimitCost = function(skill) {
-        return this.dexLimitValue() >= Manager.skillLimitCost(skill);
+        return this.tp >= Manager.skillLimitCost(skill);
     };
 
     Game_Actor.prototype.payDexLimitCost = function(skill) {
         const cost = Manager.skillLimitCost(skill);
-        if (cost > 0) {
-            this.gainDexLimitResonance(-cost);
-        }
-    };
-
-    const _Game_Actor_changeClass = Game_Actor.prototype.changeClass;
-    Game_Actor.prototype.changeClass = function(classId, keepExp) {
-        _Game_Actor_changeClass.call(this, classId, keepExp);
-        this.setDexLimitResonance(this.dexLimitValue());
-    };
-
-    //-------------------------------------------------------------------------
-    // Skill costs
-    //-------------------------------------------------------------------------
-
-    const _Game_BattlerBase_canPaySkillCost = Game_BattlerBase.prototype.canPaySkillCost;
-    Game_BattlerBase.prototype.canPaySkillCost = function(skill) {
-        const base = _Game_BattlerBase_canPaySkillCost.call(this, skill);
-
-        if (!base) return false;
-        if (!this.isActor || !this.isActor()) return true;
-        if (!this.canPayDexLimitCost) return true;
-
-        return this.canPayDexLimitCost(skill);
-    };
-
-    const _Game_BattlerBase_paySkillCost = Game_BattlerBase.prototype.paySkillCost;
-    Game_BattlerBase.prototype.paySkillCost = function(skill) {
-        _Game_BattlerBase_paySkillCost.call(this, skill);
-
-        if (this.isActor && this.isActor() && this.payDexLimitCost) {
-            this.payDexLimitCost(skill);
-        }
-    };
-
-    //-------------------------------------------------------------------------
-    // Action gain handling
-    //-------------------------------------------------------------------------
-
-    const _Game_Action_executeHpDamage = Game_Action.prototype.executeHpDamage;
-    Game_Action.prototype.executeHpDamage = function(target, value) {
-        _Game_Action_executeHpDamage.call(this, target, value);
-        Manager.processHpDamage(this.subject(), target, value);
-    };
-
-    const _Game_Action_apply = Game_Action.prototype.apply;
-    Game_Action.prototype.apply = function(target) {
-        _Game_Action_apply.call(this, target);
-
-        const subject = this.subject();
-        const item = this.item();
-        const userGain = Manager.skillGainUser(item);
-        const targetGain = Manager.skillGainTarget(item);
-
-        if (userGain !== 0) {
-            Manager.gainBattler(subject, userGain, "skillUserGain");
-        }
-
-        if (targetGain !== 0) {
-            Manager.gainBattler(target, targetGain, "skillTargetGain");
-        }
+        if (cost > 0) this.gainTp(-cost);
     };
 
     //-------------------------------------------------------------------------
@@ -781,7 +564,7 @@ Dex.LimitResonance = Dex.LimitResonance || {};
 
         if (SETTINGS.resetAtBattleStart && $gameParty) {
             $gameParty.battleMembers().forEach(actor => {
-                actor.setDexLimitResonance(SETTINGS.initialValue);
+                Manager.setBattlerTp(actor, SETTINGS.battleStartTp);
             });
         }
     };
@@ -791,62 +574,85 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         _BattleManager_endBattle.call(this, result);
 
         if (SETTINGS.resetAtBattleEnd && $gameParty) {
-            $gameParty.battleMembers().forEach(actor => actor.setDexLimitResonance(0));
+            $gameParty.battleMembers().forEach(actor => Manager.setBattlerTp(actor, 0));
         }
     };
 
     //-------------------------------------------------------------------------
-    // Sprite_DexLimitGauge
+    // Native TP visual replacement
     //-------------------------------------------------------------------------
 
-    function Sprite_DexLimitGauge() {
+    const _Sprite_Gauge_label = Sprite_Gauge.prototype.label;
+    Sprite_Gauge.prototype.label = function() {
+        if (this._statusType === "tp" && SETTINGS.renameNativeTp) {
+            return SETTINGS.gaugeLabel;
+        }
+
+        return _Sprite_Gauge_label.call(this);
+    };
+
+    const _Sprite_Gauge_gaugeColor1 = Sprite_Gauge.prototype.gaugeColor1;
+    Sprite_Gauge.prototype.gaugeColor1 = function() {
+        if (this._statusType === "tp" && SETTINGS.recolorNativeTp) {
+            return SETTINGS.color1;
+        }
+
+        return _Sprite_Gauge_gaugeColor1.call(this);
+    };
+
+    const _Sprite_Gauge_gaugeColor2 = Sprite_Gauge.prototype.gaugeColor2;
+    Sprite_Gauge.prototype.gaugeColor2 = function() {
+        if (this._statusType === "tp" && SETTINGS.recolorNativeTp) {
+            return SETTINGS.color2;
+        }
+
+        return _Sprite_Gauge_gaugeColor2.call(this);
+    };
+
+    //-------------------------------------------------------------------------
+    // Sprite_DexTpResonanceGauge
+    //-------------------------------------------------------------------------
+
+    function Sprite_DexTpResonanceGauge() {
         this.initialize(...arguments);
     }
 
-    Sprite_DexLimitGauge.prototype = Object.create(Sprite_Gauge.prototype);
-    Sprite_DexLimitGauge.prototype.constructor = Sprite_DexLimitGauge;
+    Sprite_DexTpResonanceGauge.prototype = Object.create(Sprite_Gauge.prototype);
+    Sprite_DexTpResonanceGauge.prototype.constructor = Sprite_DexTpResonanceGauge;
 
-    Sprite_DexLimitGauge.prototype.bitmapWidth = function() {
+    Sprite_DexTpResonanceGauge.prototype.bitmapWidth = function() {
         return SETTINGS.gaugeWidth;
     };
 
-    Sprite_DexLimitGauge.prototype.gaugeX = function() {
+    Sprite_DexTpResonanceGauge.prototype.gaugeX = function() {
         return SETTINGS.gaugeLabelWidth;
     };
 
-    Sprite_DexLimitGauge.prototype.currentValue = function() {
-        if (this._battler && this._battler.dexLimitValue) {
-            return this._battler.dexLimitValue();
-        }
-
-        return 0;
+    Sprite_DexTpResonanceGauge.prototype.currentValue = function() {
+        return Manager.tpValue(this._battler);
     };
 
-    Sprite_DexLimitGauge.prototype.currentMaxValue = function() {
-        if (this._battler && this._battler.dexLimitMax) {
-            return this._battler.dexLimitMax();
-        }
-
-        return SETTINGS.maxValue;
+    Sprite_DexTpResonanceGauge.prototype.currentMaxValue = function() {
+        return Manager.tpMax(this._battler);
     };
 
-    Sprite_DexLimitGauge.prototype.label = function() {
+    Sprite_DexTpResonanceGauge.prototype.label = function() {
         return SETTINGS.gaugeLabel;
     };
 
-    Sprite_DexLimitGauge.prototype.gaugeColor1 = function() {
+    Sprite_DexTpResonanceGauge.prototype.gaugeColor1 = function() {
         return SETTINGS.color1;
     };
 
-    Sprite_DexLimitGauge.prototype.gaugeColor2 = function() {
+    Sprite_DexTpResonanceGauge.prototype.gaugeColor2 = function() {
         return SETTINGS.color2;
     };
 
-    Sprite_DexLimitGauge.prototype.valueColor = function() {
+    Sprite_DexTpResonanceGauge.prototype.valueColor = function() {
         return ColorManager.normalColor();
     };
 
-    Sprite_DexLimitGauge.prototype.drawGauge = function() {
+    Sprite_DexTpResonanceGauge.prototype.drawGauge = function() {
         const gaugeX = this.gaugeX();
         const gaugeY = this.textHeight() - this.gaugeHeight();
         const gaugeWidth = this.bitmapWidth() - gaugeX;
@@ -856,10 +662,10 @@ Dex.LimitResonance = Dex.LimitResonance || {};
 
         this.bitmap.fillRect(gaugeX, gaugeY, gaugeWidth, gaugeHeight, ColorManager.gaugeBackColor());
         this.bitmap.gradientFillRect(gaugeX, gaugeY, fillW, gaugeHeight, this.gaugeColor1(), this.gaugeColor2());
-        this.drawDexLimitSeparators(gaugeX, gaugeY, gaugeWidth, gaugeHeight);
+        this.drawDexTpSeparators(gaugeX, gaugeY, gaugeWidth, gaugeHeight);
     };
 
-    Sprite_DexLimitGauge.prototype.drawDexLimitSeparators = function(gaugeX, gaugeY, gaugeWidth, gaugeHeight) {
+    Sprite_DexTpResonanceGauge.prototype.drawDexTpSeparators = function(gaugeX, gaugeY, gaugeWidth, gaugeHeight) {
         const max = this.currentMaxValue();
         if (max <= 0) return;
 
@@ -873,7 +679,7 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         }
     };
 
-    Sprite_DexLimitGauge.prototype.drawValue = function() {
+    Sprite_DexTpResonanceGauge.prototype.drawValue = function() {
         if (!SETTINGS.showValue) return;
 
         const currentValue = this.currentValue();
@@ -888,10 +694,10 @@ Dex.LimitResonance = Dex.LimitResonance || {};
     // Window integration
     //-------------------------------------------------------------------------
 
-    Window_StatusBase.prototype.placeDexLimitGauge = function(actor, x, y) {
-        const key = "actor" + actor.actorId() + "-dexLimitResonance";
-        const sprite = this.createInnerSprite(key, Sprite_DexLimitGauge);
-        sprite.setup(actor, "dexLimitResonance");
+    Window_StatusBase.prototype.placeDexTpResonanceGauge = function(actor, x, y) {
+        const key = "actor" + actor.actorId() + "-dexTpResonance";
+        const sprite = this.createInnerSprite(key, Sprite_DexTpResonanceGauge);
+        sprite.setup(actor, "dexTpResonance");
         sprite.move(x, y);
         sprite.show();
     };
@@ -902,30 +708,30 @@ Dex.LimitResonance = Dex.LimitResonance || {};
 
         const inBattle = !!($gameParty && $gameParty.inBattle && $gameParty.inBattle());
         const shouldShow = inBattle ? SETTINGS.showInBattleStatus : SETTINGS.showInMenuStatus;
+        if (!shouldShow || !actor) return;
 
-        if (!shouldShow || !actor || !actor.dexLimitValue) return;
+        const nativeTpVisible = !!($dataSystem && $dataSystem.optDisplayTp);
+        if (nativeTpVisible) return;
 
-        const automaticOffset = $dataSystem && $dataSystem.optDisplayTp ? 3 : 2;
         const lineOffset = SETTINGS.battleGaugeLineOffset >= 0
             ? SETTINGS.battleGaugeLineOffset
-            : automaticOffset;
+            : 2;
 
-        this.placeDexLimitGauge(actor, x, y + this.lineHeight() * lineOffset);
+        this.placeDexTpResonanceGauge(actor, x, y + this.lineHeight() * lineOffset);
     };
-
 
     //-------------------------------------------------------------------------
     // Battle HUD window
     //-------------------------------------------------------------------------
 
-    function Window_DexLimitResonanceHud() {
+    function Window_DexTpResonanceHud() {
         this.initialize(...arguments);
     }
 
-    Window_DexLimitResonanceHud.prototype = Object.create(Window_StatusBase.prototype);
-    Window_DexLimitResonanceHud.prototype.constructor = Window_DexLimitResonanceHud;
+    Window_DexTpResonanceHud.prototype = Object.create(Window_StatusBase.prototype);
+    Window_DexTpResonanceHud.prototype.constructor = Window_DexTpResonanceHud;
 
-    Window_DexLimitResonanceHud.prototype.initialize = function(rect) {
+    Window_DexTpResonanceHud.prototype.initialize = function(rect) {
         Window_StatusBase.prototype.initialize.call(this, rect);
         this._dexReferenceStatusWindow = null;
         this._dexLastSignature = "";
@@ -934,30 +740,30 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         this.refresh();
     };
 
-    Window_DexLimitResonanceHud.prototype.setReferenceStatusWindow = function(window) {
+    Window_DexTpResonanceHud.prototype.setReferenceStatusWindow = function(window) {
         this._dexReferenceStatusWindow = window || null;
         this.updatePlacement(true);
     };
 
-    Window_DexLimitResonanceHud.prototype.lineHeight = function() {
+    Window_DexTpResonanceHud.prototype.lineHeight = function() {
         return SETTINGS.battleHudLineHeight;
     };
 
-    Window_DexLimitResonanceHud.prototype.activeMembers = function() {
+    Window_DexTpResonanceHud.prototype.activeMembers = function() {
         if (!$gameParty || !$gameParty.battleMembers) return [];
-        return $gameParty.battleMembers().filter(actor => actor && actor.dexLimitValue);
+        return $gameParty.battleMembers().filter(actor => actor);
     };
 
-    Window_DexLimitResonanceHud.prototype.desiredWidth = function() {
+    Window_DexTpResonanceHud.prototype.desiredWidth = function() {
         return Math.min(SETTINGS.battleHudWidth, Math.max(220, Graphics.boxWidth - 24));
     };
 
-    Window_DexLimitResonanceHud.prototype.desiredHeight = function() {
+    Window_DexTpResonanceHud.prototype.desiredHeight = function() {
         const rows = Math.max(1, this.activeMembers().length);
         return this.padding * 2 + rows * this.lineHeight();
     };
 
-    Window_DexLimitResonanceHud.prototype.updatePlacement = function(force) {
+    Window_DexTpResonanceHud.prototype.updatePlacement = function(force) {
         const width = this.desiredWidth();
         const height = this.desiredHeight();
         let x = SETTINGS.battleHudX;
@@ -984,7 +790,7 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         }
     };
 
-    Window_DexLimitResonanceHud.prototype.update = function() {
+    Window_DexTpResonanceHud.prototype.update = function() {
         Window_StatusBase.prototype.update.call(this);
         this.updatePlacement(false);
 
@@ -999,18 +805,18 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         }
     };
 
-    Window_DexLimitResonanceHud.prototype.makeSignature = function() {
+    Window_DexTpResonanceHud.prototype.makeSignature = function() {
         return this.activeMembers().map(actor => {
             return [
                 actor.actorId(),
                 actor.name(),
-                actor.dexLimitValue(),
-                actor.dexLimitMax()
+                Manager.tpValue(actor),
+                Manager.tpMax(actor)
             ].join(":");
         }).join("|") + "|" + Graphics.boxWidth + "x" + Graphics.boxHeight;
     };
 
-    Window_DexLimitResonanceHud.prototype.refresh = function() {
+    Window_DexTpResonanceHud.prototype.refresh = function() {
         if (!this.contents) return;
         this.contents.clear();
 
@@ -1019,19 +825,19 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         const contentWidth = this.innerWidth;
 
         for (let i = 0; i < members.length; i++) {
-            this.drawActorDexLimitLine(members[i], 0, i * rowHeight, contentWidth, rowHeight);
+            this.drawActorDexTpLine(members[i], 0, i * rowHeight, contentWidth, rowHeight);
         }
     };
 
-    Window_DexLimitResonanceHud.prototype.drawActorDexLimitLine = function(actor, x, y, width, height) {
+    Window_DexTpResonanceHud.prototype.drawActorDexTpLine = function(actor, x, y, width, height) {
         const nameWidth = Math.min(SETTINGS.battleHudActorNameWidth, Math.floor(width * 0.42));
         const labelWidth = SETTINGS.gaugeLabelWidth;
         const gaugeX = x + nameWidth + labelWidth;
         const gaugeWidth = Math.max(80, width - nameWidth - labelWidth);
         const gaugeHeight = 12;
         const gaugeY = y + Math.floor((height - gaugeHeight) / 2) + 3;
-        const current = actor.dexLimitValue();
-        const max = actor.dexLimitMax();
+        const current = Manager.tpValue(actor);
+        const max = Manager.tpMax(actor);
         const rate = max > 0 ? Manager.clamp(current / max, 0, 1) : 0;
         const fillWidth = Math.floor(gaugeWidth * rate);
 
@@ -1043,7 +849,7 @@ Dex.LimitResonance = Dex.LimitResonance || {};
 
         this.contents.fillRect(gaugeX, gaugeY, gaugeWidth, gaugeHeight, ColorManager.gaugeBackColor());
         this.contents.gradientFillRect(gaugeX, gaugeY, fillWidth, gaugeHeight, SETTINGS.color1, SETTINGS.color2);
-        this.drawDexLimitHudSeparators(gaugeX, gaugeY, gaugeWidth, gaugeHeight, max);
+        this.drawDexTpHudSeparators(gaugeX, gaugeY, gaugeWidth, gaugeHeight, max);
 
         if (SETTINGS.showValue) {
             this.changeTextColor(ColorManager.normalColor());
@@ -1053,7 +859,7 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         this.resetTextColor();
     };
 
-    Window_DexLimitResonanceHud.prototype.drawDexLimitHudSeparators = function(gaugeX, gaugeY, gaugeWidth, gaugeHeight, max) {
+    Window_DexTpResonanceHud.prototype.drawDexTpHudSeparators = function(gaugeX, gaugeY, gaugeWidth, gaugeHeight, max) {
         if (max <= 0) return;
 
         for (let i = 0; i < SETTINGS.thresholds.length; i++) {
@@ -1065,29 +871,29 @@ Dex.LimitResonance = Dex.LimitResonance || {};
         }
     };
 
-    const _Scene_Battle_createAllWindows_DexLimit = Scene_Battle.prototype.createAllWindows;
+    const _Scene_Battle_createAllWindows_DexTp = Scene_Battle.prototype.createAllWindows;
     Scene_Battle.prototype.createAllWindows = function() {
-        _Scene_Battle_createAllWindows_DexLimit.call(this);
+        _Scene_Battle_createAllWindows_DexTp.call(this);
 
         if (SETTINGS.showBattleHud) {
-            this.createDexLimitResonanceHudWindow();
+            this.createDexTpResonanceHudWindow();
         }
     };
 
-    Scene_Battle.prototype.createDexLimitResonanceHudWindow = function() {
+    Scene_Battle.prototype.createDexTpResonanceHudWindow = function() {
         const rect = new Rectangle(0, 0, SETTINGS.battleHudWidth, 80);
-        this._dexLimitHudWindow = new Window_DexLimitResonanceHud(rect);
-        this._dexLimitHudWindow.setReferenceStatusWindow(this._statusWindow);
-        this.addWindow(this._dexLimitHudWindow);
+        this._dexTpResonanceHudWindow = new Window_DexTpResonanceHud(rect);
+        this._dexTpResonanceHudWindow.setReferenceStatusWindow(this._statusWindow);
+        this.addWindow(this._dexTpResonanceHudWindow);
     };
 
     //-------------------------------------------------------------------------
-    // Skill cost drawing
+    // Skill TP cost drawing as RES
     //-------------------------------------------------------------------------
 
     const _Window_SkillList_drawSkillCost = Window_SkillList.prototype.drawSkillCost;
     Window_SkillList.prototype.drawSkillCost = function(skill, x, y, width) {
-        const cost = Manager.skillLimitCost(skill);
+        const cost = skill ? Number(skill.tpCost || 0) : 0;
 
         if (cost > 0) {
             this.changeTextColor(ColorManager.textColor(SETTINGS.costColorIndex));
