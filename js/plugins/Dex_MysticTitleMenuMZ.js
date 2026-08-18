@@ -1,10 +1,10 @@
 /*:
  * @target MZ
- * @plugindesc v1.0.5 Menú de título visual, adaptable y configurable mediante imágenes.
+ * @plugindesc v1.0.4 Pulido UX: jerarquía de botones, selección elegante y versión discreta.
  * @author Dextroyean y Jaime
  *
  * @help
- * MysticTitleMenuMZ.js
+ * Dex_MysticTitleMenuMZ.js
  * ============================================================================
  * Reemplaza la ventana de título estándar de RPG Maker MZ por un menú formado
  * por sprites: fondo, logotipo, panel y botones con estados normal/seleccionado.
@@ -29,12 +29,36 @@
  * - Estado deshabilitado de Continuar cuando no existe una partida guardada.
  * - Botón seleccionado con imagen propia y pulso opcional.
  * - Texto de versión opcional.
- * - Press Button configurable en un solo apartado del Plugin Manager, sin duplicarlo en Configuración general.
- * - Pantalla "presiona una tecla" opcional.
- * - Texto inicial configurable desde el Plugin Manager.
- * - Forzado opcional de pantalla inicial para proyectos con parámetros viejos.
+ * - Pantalla "presiona una tecla" opcional y configurable.
+ * - El panel y los botones permanecen ocultos hasta la entrada inicial.
  * - Partículas decorativas opcionales.
  * - Si no se asignan imágenes de botón, el plugin dibuja botones de respaldo.
+ *
+ * v1.0.2
+ * - Añade escala visual de botones independiente de su lienzo PNG.
+ * - Preset UX recomendado: 91.5% (400x240 -> aprox. 366x220).
+ * - Añade hitbox configurable e independiente para ratón/touch.
+ * - Corrige el solapamiento invisible de áreas clicables cuando ButtonHeight
+ *   es mayor que ButtonSpacing.
+ * - Mantiene la pantalla inicial "Presiona Z para Entrar al Bosque".
+ *
+ * v1.0.3
+ * - Nombre oficial: Dex_MysticTitleMenuMZ.js.
+ * - Detecta automáticamente el nombre real del archivo cargado.
+ * - Ya no depende de una cadena fija para leer parámetros.
+ * - Incluye fallback de compatibilidad con MysticTitleMenuMZ.
+ * - Evita perder parámetros si el plugin cambia de nombre durante la migración.
+ *
+ * v1.0.4
+ * - Preset UX automático para no depender de parámetros guardados de v1.0.3.
+ * - Botones al 88% (400x240 -> aprox. 352x211).
+ * - Fuente recomendada reducida de 38 a 34.
+ * - Pulso seleccionado reducido de 2.5% a 1.5%.
+ * - Botones no seleccionados al 84% de opacidad.
+ * - Botón deshabilitado más tenue y ligeramente desaturado.
+ * - El botón seleccionado conserva 100% de opacidad; el pulso afecta escala,
+ *   no legibilidad.
+ * - Texto de versión a ~75% de opacidad.
  *
  * COMPATIBILIDAD
  * Este plugin reemplaza la presentación de Scene_Title. Desactiva otros
@@ -44,18 +68,19 @@
  *
  * No contiene comandos de plugin.
  *
+ * @param UXPreset104
+ * @text Aplicar preset UX v1.0.4
+ * @type boolean
+ * @on Sí
+ * @off No
+ * @desc Recomendado. Aplica automáticamente escala 88%, fuente 34 y pulso 1.5% aunque conserves parámetros antiguos. Desactívalo si quieres controlar esos tres valores manualmente.
+ * @default true
+ *
  * @param General
  * @text Configuración general
  * @type struct<GeneralSettings>
- * @default {"ReferenceWidth":"1920","ReferenceHeight":"1080","ImageFolder":"img/title_menu/","VersionText":"","VersionX":"1840","VersionY":"1035"}
+ * @default {"ReferenceWidth":"1920","ReferenceHeight":"1080","ImageFolder":"img/title_menu/","UsePressStart":"true","PromptText":"Presiona Z para Entrar al Bosque","PromptX":"960","PromptY":"940","PromptFontSize":"28","PromptTextColor":"#fcd757","PromptOutlineColor":"rgba(0,0,0,0.75)","PromptOutlineWidth":"6","PromptPulse":"true","PromptPulseSpeed":"0.05","PromptPulseScale":"0.06","VersionText":"","VersionX":"1840","VersionY":"1035","VersionOpacity":"190"}
  *
- * @param PressButton
- * @text Press Button
- * @type struct<PressButtonSettings>
- * @desc Opciones de la pantalla inicial "Presiona cualquier botón".
- * @default {"UsePressStart":"true","ForcePressStart":"true","Text":"Presiona cualquier botón","X":"960","Y":"940","Width":"900","Height":"72","FontSize":"32","Color":"#fff4d6","OutlineColor":"rgba(20,5,40,0.95)","OutlineWidth":"5","Blink":"true","BlinkSpeed":"0.070","MinOpacity":"0.20","MaxOpacity":"0.90"}
- *
-
  * @param Images
  * @text Imágenes
  * @type struct<ImageSettings>
@@ -64,17 +89,17 @@
  * @param Layout
  * @text Posiciones y tamaños
  * @type struct<LayoutSettings>
- * @default {"LogoX":"430","LogoY":"260","LogoWidth":"760","LogoHeight":"390","ShowPanel":"true","PanelX":"300","PanelY":"670","PanelWidth":"520","PanelHeight":"610","ButtonX":"300","ButtonY":"575","ButtonWidth":"450","ButtonHeight":"85","ButtonSpacing":"105"}
+ * @default {"LogoX":"430","LogoY":"260","LogoWidth":"760","LogoHeight":"390","ShowPanel":"true","PanelX":"356","PanelY":"670","PanelWidth":"620","PanelHeight":"560","ButtonX":"356","ButtonY":"565","ButtonWidth":"400","ButtonHeight":"240","ButtonSpacing":"105","ButtonVisualScale":"88","ButtonHitboxWidth":"370","ButtonHitboxHeight":"86"}
  *
  * @param Text
  * @text Texto de botones
  * @type struct<TextSettings>
- * @default {"NewGameText":"Nueva Partida","ContinueText":"Continuar","OptionsText":"Opciones","FontFace":"rmmz-mainfont","FontSize":"38","TextColor":"#f6e4b5","SelectedTextColor":"#fff4d6","DisabledTextColor":"#9a8d9f","OutlineColor":"rgba(35,10,45,0.95)","OutlineWidth":"5"}
+ * @default {"NewGameText":"Nueva Partida","ContinueText":"Continuar","OptionsText":"Opciones","FontFace":"rmmz-mainfont","FontSize":"34","TextColor":"#f6e4b5","SelectedTextColor":"#fff4d6","DisabledTextColor":"#9a8d9f","OutlineColor":"rgba(35,10,45,0.95)","OutlineWidth":"5"}
  *
  * @param Effects
  * @text Efectos
  * @type struct<EffectSettings>
- * @default {"SelectedPulse":"true","PulseStrength":"0.025","UseParticles":"true","ParticleCount":"28","BackgroundParallax":"true","ParallaxStrength":"10","FadeFrames":"36"}
+ * @default {"SelectedPulse":"true","PulseStrength":"0.015","UnselectedOpacity":"0.84","DisabledOpacity":"0.46","DisabledTint":"#b9b0ba","UseParticles":"true","ParticleCount":"28","BackgroundParallax":"true","ParallaxStrength":"10","FadeFrames":"36"}
  */
 
 /*~struct~GeneralSettings:
@@ -95,7 +120,76 @@
  * @type string
  * @default img/title_menu/
  *
-
+ * @param UsePressStart
+ * @text Usar "presiona una tecla"
+ * @type boolean
+ * @on Sí
+ * @off No
+ * @desc Oculta el panel y los botones hasta recibir una entrada.
+ * @default true
+ *
+ * @param PromptText
+ * @text Texto inicial
+ * @type string
+ * @default Presiona Z para Entrar al Bosque
+ *
+ * @param PromptX
+ * @text Posición X del texto inicial
+ * @type number
+ * @default 960
+ *
+ * @param PromptY
+ * @text Posición Y del texto inicial
+ * @type number
+ * @default 940
+ *
+ * @param PromptFontSize
+ * @text Tamaño del texto inicial
+ * @type number
+ * @min 8
+ * @max 96
+ * @default 28
+ *
+ * @param PromptTextColor
+ * @text Color del texto inicial
+ * @type string
+ * @default #fcd757
+ *
+ * @param PromptOutlineColor
+ * @text Color del contorno inicial
+ * @type string
+ * @default rgba(0,0,0,0.75)
+ *
+ * @param PromptOutlineWidth
+ * @text Grosor del contorno inicial
+ * @type number
+ * @min 0
+ * @max 20
+ * @default 6
+ *
+ * @param PromptPulse
+ * @text Pulso del texto inicial
+ * @type boolean
+ * @on Sí
+ * @off No
+ * @default true
+ *
+ * @param PromptPulseSpeed
+ * @text Velocidad del pulso
+ * @type number
+ * @decimals 3
+ * @min 0.001
+ * @max 1
+ * @default 0.05
+ *
+ * @param PromptPulseScale
+ * @text Intensidad de escala del pulso
+ * @type number
+ * @decimals 3
+ * @min 0
+ * @max 0.5
+ * @default 0.06
+ *
  * @param VersionText
  * @text Texto de versión
  * @desc Déjalo vacío para ocultarlo.
@@ -111,103 +205,14 @@
  * @text Posición Y de versión
  * @type number
  * @default 1035
- */
-
-
-/*~struct~PressButtonSettings:
- * @param UsePressStart
- * @text Usar Press Button
- * @type boolean
- * @on Sí
- * @off No
- * @default true
  *
- * @param ForcePressStart
- * @text Forzar Press Button
- * @type boolean
- * @on Sí
- * @off No
- * @desc Si está en Sí, muestra siempre la pantalla de "presiona botón", aunque existan parámetros viejos.
- * @default true
- *
- * @param Text
- * @text Texto
- * @type string
- * @default Presiona cualquier botón
- *
- * @param X
- * @text Posición X
- * @type number
- * @default 960
- *
- * @param Y
- * @text Posición Y
- * @type number
- * @default 940
- *
- * @param Width
- * @text Ancho
- * @type number
- * @min 120
- * @default 900
- *
- * @param Height
- * @text Alto
- * @type number
- * @min 24
- * @default 72
- *
- * @param FontSize
- * @text Tamaño de fuente
- * @type number
- * @min 8
- * @default 32
- *
- * @param Color
- * @text Color
- * @type string
- * @default #fff4d6
- *
- * @param OutlineColor
- * @text Color de contorno
- * @type string
- * @default rgba(20,5,40,0.95)
- *
- * @param OutlineWidth
- * @text Grosor de contorno
+ * @param VersionOpacity
+ * @text Opacidad de versión
  * @type number
  * @min 0
- * @default 5
- *
- * @param Blink
- * @text Parpadeo
- * @type boolean
- * @on Sí
- * @off No
- * @default true
- *
- * @param BlinkSpeed
- * @text Velocidad de parpadeo
- * @type number
- * @decimals 3
- * @min 0
- * @default 0.070
- *
- * @param MinOpacity
- * @text Opacidad mínima
- * @type number
- * @decimals 2
- * @min 0
- * @max 1
- * @default 0.20
- *
- * @param MaxOpacity
- * @text Opacidad máxima
- * @type number
- * @decimals 2
- * @min 0
- * @max 1
- * @default 0.90
+ * @max 255
+ * @desc 190 equivale aproximadamente a 75% de opacidad.
+ * @default 190
  */
 
 /*~struct~ImageSettings:
@@ -323,6 +328,29 @@
  * @type number
  * @min 40
  * @default 105
+ *
+ * @param ButtonVisualScale
+ * @text Escala visual del botón %
+ * @type number
+ * @decimals 1
+ * @min 50
+ * @max 150
+ * @desc Escala final aplicada al botón completo. 88 reduce 400x240 a aprox. 352x211 sin cambiar tus parámetros base.
+ * @default 88
+ *
+ * @param ButtonHitboxWidth
+ * @text Ancho área de clic
+ * @type number
+ * @min 80
+ * @desc Área interactiva horizontal. Es independiente del lienzo PNG.
+ * @default 370
+ *
+ * @param ButtonHitboxHeight
+ * @text Alto área de clic
+ * @type number
+ * @min 30
+ * @desc Evita que PNGs altos/transparentes hagan que los botones se solapen al usar ratón o touch.
+ * @default 86
  */
 
 /*~struct~TextSettings:
@@ -350,7 +378,7 @@
  * @text Tamaño de fuente
  * @type number
  * @min 12
- * @default 38
+ * @default 34
  *
  * @param TextColor
  * @text Color normal
@@ -393,7 +421,32 @@
  * @decimals 3
  * @min 0
  * @max 0.15
- * @default 0.025
+ * @desc 0.015 = pulso muy sutil, recomendado para esta interfaz.
+ * @default 0.015
+ *
+ * @param UnselectedOpacity
+ * @text Opacidad no seleccionado
+ * @type number
+ * @decimals 2
+ * @min 0
+ * @max 1
+ * @desc Los botones no seleccionados se apagan ligeramente. Recomendado: 0.84.
+ * @default 0.84
+ *
+ * @param DisabledOpacity
+ * @text Opacidad deshabilitado
+ * @type number
+ * @decimals 2
+ * @min 0
+ * @max 1
+ * @desc Opacidad de Continuar cuando no existe una partida guardada.
+ * @default 0.46
+ *
+ * @param DisabledTint
+ * @text Tinte deshabilitado
+ * @type string
+ * @desc Tinte aplicado al arte del botón deshabilitado para desaturarlo.
+ * @default #b9b0ba
  *
  * @param UseParticles
  * @text Partículas decorativas
@@ -431,11 +484,70 @@
  * @default 36
  */
 
+var Imported = Imported || {};
+Imported.Dex_MysticTitleMenuMZ = true;
+
+var Dex = Dex || {};
+Dex.MysticTitleMenuMZ = Dex.MysticTitleMenuMZ || {};
+
 (() => {
     "use strict";
 
-    const pluginName = "MysticTitleMenuMZ";
-    const raw = PluginManager.parameters(pluginName);
+    //-------------------------------------------------------------------------
+    // Nombre del plugin y lectura robusta de parámetros
+    //-------------------------------------------------------------------------
+    // RPG Maker MZ vincula los parámetros al nombre del archivo .js.
+    // Detectarlo automáticamente evita romper la configuración si el archivo
+    // se renombra en el futuro.
+    const pluginName = (() => {
+        const script = document.currentScript;
+        if (script && script.src) {
+            try {
+                const file = decodeURIComponent(script.src.split("/").pop() || "");
+                const detected = file.replace(/\.js$/i, "");
+                if (detected) return detected;
+            } catch (error) {
+                console.warn("[Dex_MysticTitleMenuMZ] No se pudo detectar el nombre del archivo.", error);
+            }
+        }
+        return "Dex_MysticTitleMenuMZ";
+    })();
+
+    const hasUsefulParameters = params => {
+        return params && Object.keys(params).length > 0;
+    };
+
+    // 1) Nombre real del archivo actual.
+    // 2) Nombre oficial nuevo.
+    // 3) Nombre anterior, solo como compatibilidad durante la migración.
+    const parameterSources = [
+        pluginName,
+        "Dex_MysticTitleMenuMZ",
+        "MysticTitleMenuMZ"
+    ].filter((name, index, list) => name && list.indexOf(name) === index);
+
+    let raw = {};
+    let parameterSourceName = pluginName;
+
+    for (const name of parameterSources) {
+        const candidate = PluginManager.parameters(name);
+        if (hasUsefulParameters(candidate)) {
+            raw = candidate;
+            parameterSourceName = name;
+            break;
+        }
+    }
+
+    if (!hasUsefulParameters(raw)) {
+        console.warn(
+            `[${pluginName}] No se encontraron parámetros guardados. ` +
+            "Se usarán los valores predeterminados del plugin."
+        );
+    } else if (parameterSourceName !== pluginName) {
+        console.info(
+            `[${pluginName}] Parámetros recuperados temporalmente desde "${parameterSourceName}".`
+        );
+    }
 
     const parseStruct = (value, fallback = {}) => {
         try {
@@ -455,36 +567,45 @@
         return Number.isFinite(result) ? result : fallback;
     };
     const str = (value, fallback = "") => value !== undefined && value !== null ? String(value) : fallback;
+    const colorNumber = (value, fallback = 0xffffff) => {
+        const text = String(value ?? "").trim().replace(/^#/, "").replace(/^0x/i, "");
+        const result = Number.parseInt(text, 16);
+        return Number.isFinite(result) ? result : fallback;
+    };
 
     const generalRaw = parseStruct(raw.General);
-    const pressRaw = parseStruct(raw.PressButton);
     const imagesRaw = parseStruct(raw.Images);
     const layoutRaw = parseStruct(raw.Layout);
     const textRaw = parseStruct(raw.Text);
     const effectsRaw = parseStruct(raw.Effects);
 
+    Dex.MysticTitleMenuMZ.pluginName = pluginName;
+    Dex.MysticTitleMenuMZ.parameterSourceName = parameterSourceName;
+
+    // El preset existe para que reemplazar el JS sea suficiente. RPG Maker
+    // conserva valores antiguos en plugins.js, por lo que cambiar solamente
+    // los @default no actualizaría un proyecto existente.
+    const useUxPreset104 = bool(raw.UXPreset104, true);
+
     const P = {
         referenceWidth: num(generalRaw.ReferenceWidth, 1920),
         referenceHeight: num(generalRaw.ReferenceHeight, 1080),
         imageFolder: str(generalRaw.ImageFolder, "img/title_menu/").replace(/\\/g, "/").replace(/\/?$/, "/"),
-        forcePressStart: bool(pressRaw.ForcePressStart, true),
-        usePressStart: bool(pressRaw.ForcePressStart, true) || bool(pressRaw.UsePressStart, true),
-        promptText: str(pressRaw.Text, "Presiona cualquier botón"),
-        promptX: num(pressRaw.X, 960),
-        promptY: num(pressRaw.Y, 940),
-        promptWidth: Math.max(120, num(pressRaw.Width, 900)),
-        promptHeight: Math.max(24, num(pressRaw.Height, 72)),
-        promptFontSize: Math.max(8, num(pressRaw.FontSize, 32)),
-        promptColor: str(pressRaw.Color, "#fff4d6"),
-        promptOutlineColor: str(pressRaw.OutlineColor, "rgba(20,5,40,0.95)"),
-        promptOutlineWidth: Math.max(0, num(pressRaw.OutlineWidth, 5)),
-        promptBlink: bool(pressRaw.Blink, true),
-        promptBlinkSpeed: Math.max(0, num(pressRaw.BlinkSpeed, 0.07)),
-        promptBlinkMinOpacity: Math.max(0, Math.min(1, num(pressRaw.MinOpacity, 0.20))),
-        promptBlinkMaxOpacity: Math.max(0, Math.min(1, num(pressRaw.MaxOpacity, 0.90))),
+        usePressStart: bool(generalRaw.UsePressStart, true),
+        promptText: str(generalRaw.PromptText, "Presiona Z para Entrar al Bosque"),
+        promptX: num(generalRaw.PromptX, 960),
+        promptY: num(generalRaw.PromptY, 940),
+        promptFontSize: num(generalRaw.PromptFontSize, 28),
+        promptTextColor: str(generalRaw.PromptTextColor, "#fcd757"),
+        promptOutlineColor: str(generalRaw.PromptOutlineColor, "rgba(0,0,0,0.75)"),
+        promptOutlineWidth: num(generalRaw.PromptOutlineWidth, 6),
+        promptPulse: bool(generalRaw.PromptPulse, true),
+        promptPulseSpeed: num(generalRaw.PromptPulseSpeed, 0.05),
+        promptPulseScale: num(generalRaw.PromptPulseScale, 0.06),
         versionText: str(generalRaw.VersionText, ""),
         versionX: num(generalRaw.VersionX, 1840),
         versionY: num(generalRaw.VersionY, 1035),
+        versionOpacity: Math.max(0, Math.min(255, num(generalRaw.VersionOpacity, 190))),
 
         backgroundImage: str(imagesRaw.BackgroundImage, "Title_Background"),
         logoImage: str(imagesRaw.LogoImage, "Title_Logo"),
@@ -497,15 +618,20 @@
         logoWidth: num(layoutRaw.LogoWidth, 760),
         logoHeight: num(layoutRaw.LogoHeight, 390),
         showPanel: bool(layoutRaw.ShowPanel, true),
-        panelX: num(layoutRaw.PanelX, 300),
+        panelX: num(layoutRaw.PanelX, 356),
         panelY: num(layoutRaw.PanelY, 670),
-        panelWidth: num(layoutRaw.PanelWidth, 520),
-        panelHeight: num(layoutRaw.PanelHeight, 610),
-        buttonX: num(layoutRaw.ButtonX, 300),
-        buttonY: num(layoutRaw.ButtonY, 575),
-        buttonWidth: num(layoutRaw.ButtonWidth, 450),
-        buttonHeight: num(layoutRaw.ButtonHeight, 85),
+        panelWidth: num(layoutRaw.PanelWidth, 620),
+        panelHeight: num(layoutRaw.PanelHeight, 560),
+        buttonX: num(layoutRaw.ButtonX, 356),
+        buttonY: num(layoutRaw.ButtonY, 565),
+        buttonWidth: num(layoutRaw.ButtonWidth, 400),
+        buttonHeight: num(layoutRaw.ButtonHeight, 240),
         buttonSpacing: num(layoutRaw.ButtonSpacing, 105),
+        buttonVisualScale: useUxPreset104
+            ? 0.88
+            : Math.max(0.5, num(layoutRaw.ButtonVisualScale, 88) / 100),
+        buttonHitboxWidth: Math.max(80, num(layoutRaw.ButtonHitboxWidth, 370)),
+        buttonHitboxHeight: Math.max(30, num(layoutRaw.ButtonHitboxHeight, 86)),
 
         labels: [
             str(textRaw.NewGameText, "Nueva Partida"),
@@ -513,7 +639,7 @@
             str(textRaw.OptionsText, "Opciones")
         ],
         fontFace: str(textRaw.FontFace, "rmmz-mainfont"),
-        fontSize: num(textRaw.FontSize, 38),
+        fontSize: useUxPreset104 ? 34 : num(textRaw.FontSize, 34),
         textColor: str(textRaw.TextColor, "#f6e4b5"),
         selectedTextColor: str(textRaw.SelectedTextColor, "#fff4d6"),
         disabledTextColor: str(textRaw.DisabledTextColor, "#9a8d9f"),
@@ -521,7 +647,10 @@
         outlineWidth: num(textRaw.OutlineWidth, 5),
 
         selectedPulse: bool(effectsRaw.SelectedPulse, true),
-        pulseStrength: num(effectsRaw.PulseStrength, 0.025),
+        pulseStrength: useUxPreset104 ? 0.015 : num(effectsRaw.PulseStrength, 0.015),
+        unselectedOpacity: Math.max(0, Math.min(1, num(effectsRaw.UnselectedOpacity, 0.84))),
+        disabledOpacity: Math.max(0, Math.min(1, num(effectsRaw.DisabledOpacity, 0.46))),
+        disabledTint: colorNumber(effectsRaw.DisabledTint, 0xb9b0ba),
         useParticles: bool(effectsRaw.UseParticles, true),
         particleCount: Math.max(0, Math.floor(num(effectsRaw.ParticleCount, 28))),
         backgroundParallax: bool(effectsRaw.BackgroundParallax, true),
@@ -552,8 +681,11 @@
             this._selected = false;
             this._enabled = true;
             this._phase = index * 0.9;
+            this._baseScale = P.buttonVisualScale;
             this._createBacks();
             this._createLabel(label);
+            this.scale.set(this._baseScale);
+            this._refreshVisualState();
         }
 
         _createBacks() {
@@ -598,15 +730,32 @@
 
         setSelected(value) {
             this._selected = !!value;
-            this._selectedSprite.visible = this._selected;
-            this._normalSprite.visible = !this._selected;
+            this._refreshVisualState();
             this._redrawLabel();
         }
 
         setEnabled(value) {
             this._enabled = !!value;
-            this.alpha = this._enabled ? 1 : 0.48;
+            this._refreshVisualState();
             this._redrawLabel();
+        }
+
+        _refreshVisualState() {
+            // Un comando deshabilitado nunca utiliza el arte brillante de
+            // selección. Esto evita que "Continuar" parezca disponible.
+            const showSelected = this._selected && this._enabled;
+            this._selectedSprite.visible = showSelected;
+            this._normalSprite.visible = !showSelected;
+
+            if (!this._enabled) {
+                this.alpha = P.disabledOpacity;
+                this._normalSprite.tint = P.disabledTint;
+                this._selectedSprite.tint = P.disabledTint;
+            } else {
+                this.alpha = this._selected ? 1 : P.unselectedOpacity;
+                this._normalSprite.tint = 0xffffff;
+                this._selectedSprite.tint = 0xffffff;
+            }
         }
 
         _redrawLabel() {
@@ -626,20 +775,26 @@
         }
 
         containsPoint(x, y) {
-            const bounds = this.getBounds();
-            return bounds && bounds.contains(x, y);
+            // Convierte las coordenadas globales a coordenadas locales del botón.
+            // Así el área de interacción no depende del tamaño/transparencia del PNG.
+            const point = new PIXI.Point(x, y);
+            const local = this.worldTransform.applyInverse(point);
+            const halfW = P.buttonHitboxWidth / 2;
+            const halfH = P.buttonHitboxHeight / 2;
+            return local.x >= -halfW && local.x <= halfW &&
+                   local.y >= -halfH && local.y <= halfH;
         }
 
         update() {
             super.update();
             if (this._selected && this._enabled && P.selectedPulse) {
                 const pulse = 1 + Math.sin(Graphics.frameCount * 0.08 + this._phase) * P.pulseStrength;
-                this.scale.set(pulse);
-                this._selectedSprite.alpha = 0.92 + Math.sin(Graphics.frameCount * 0.1 + this._phase) * 0.08;
+                this.scale.set(this._baseScale * pulse);
             } else {
-                this.scale.set(1);
-                this._selectedSprite.alpha = 1;
+                this.scale.set(this._baseScale);
             }
+            // La imagen seleccionada permanece totalmente legible.
+            this._selectedSprite.alpha = 1;
         }
     }
 
@@ -734,17 +889,20 @@
 
     Scene_Title.prototype._createMysticPrompt = function() {
         if (!P.usePressStart) return;
-        const bitmap = new Bitmap(P.promptWidth, P.promptHeight);
+        const height = Math.max(72, P.promptFontSize + 44);
+        const bitmap = new Bitmap(1100, height);
         bitmap.fontFace = P.fontFace;
         bitmap.fontSize = P.promptFontSize;
-        bitmap.textColor = P.promptColor;
+        bitmap.textColor = P.promptTextColor;
         bitmap.outlineColor = P.promptOutlineColor;
         bitmap.outlineWidth = P.promptOutlineWidth;
-        bitmap.drawText(P.promptText, 0, 0, P.promptWidth, P.promptHeight, "center");
+        bitmap.drawText(P.promptText, 0, 0, 1100, height, "center");
         this._mysticPrompt = new Sprite(bitmap);
         this._mysticPrompt.anchor.set(0.5);
         this._mysticPrompt.x = P.promptX;
         this._mysticPrompt.y = P.promptY;
+        this._mysticPrompt._mysticBaseScaleX = 1;
+        this._mysticPrompt._mysticBaseScaleY = 1;
         this._mysticRoot.addChild(this._mysticPrompt);
     };
 
@@ -761,6 +919,7 @@
         this._mysticVersion.anchor.set(1, 0.5);
         this._mysticVersion.x = P.versionX;
         this._mysticVersion.y = P.versionY;
+        this._mysticVersion.opacity = P.versionOpacity;
         this._mysticRoot.addChild(this._mysticVersion);
     };
 
@@ -841,21 +1000,18 @@
     Scene_Title.prototype._updateMysticPressStart = function() {
         if (this._mysticStarted) return;
         if (this._mysticPrompt) {
-            if (P.promptBlink) {
-                const min = Math.min(P.promptBlinkMinOpacity, P.promptBlinkMaxOpacity);
-                const max = Math.max(P.promptBlinkMinOpacity, P.promptBlinkMaxOpacity);
-                const mid = (min + max) / 2;
-                const amp = (max - min) / 2;
-                this._mysticPrompt.alpha = mid + Math.sin(Graphics.frameCount * P.promptBlinkSpeed) * amp;
+            const wave = Math.sin(Graphics.frameCount * P.promptPulseSpeed);
+            this._mysticPrompt.alpha = 0.72 + wave * 0.22;
+            if (P.promptPulse) {
+                const scale = 1 + wave * P.promptPulseScale;
+                this._mysticPrompt.scale.set(scale);
             } else {
-                this._mysticPrompt.alpha = 1;
+                this._mysticPrompt.scale.set(1);
             }
         }
         const pressed = Input.isTriggered("ok") || Input.isTriggered("cancel") ||
             Input.isTriggered("up") || Input.isTriggered("down") ||
             Input.isTriggered("left") || Input.isTriggered("right") ||
-            Input.isTriggered("shift") || Input.isTriggered("control") ||
-            Input.isTriggered("pageup") || Input.isTriggered("pagedown") ||
             TouchInput.isTriggered();
         if (pressed) {
             SoundManager.playOk();
