@@ -1,0 +1,768 @@
+{
+  "version": 1,
+  "song": "Runes of Stormhall",
+  "musicName": "Runes_of_Stormhall",
+  "bpm": 136.0,
+  "offsetSeconds": 0.0,
+  "inputMode": "simple4",
+  "buttons": [
+    "Z",
+    "X",
+    "UP",
+    "DOWN"
+  ],
+  "lanes": [
+    "Nymphi",
+    "Yoss"
+  ],
+  "author": "Dextroyean y Jaime",
+  "notes": "Chart manual tipo Pump/DDR. Tiempo en segundos desde que inicia la música.",
+  "chartName": "Runes_of_Stormhall_60s_Normal",
+  "difficulty": "Normal 60s Demo",
+  "durationSeconds": 60.0,
+  "events": [
+    {
+      "time": 3.622,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 5.387,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 6.711,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 7.593,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 8.475,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 10.24,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 10.681,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 11.122,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 12.005,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 12.446,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 12.887,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 14.211,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 14.652,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 15.093,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "X"
+        },
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 15.534,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 16.858,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 17.74,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 18.622,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        },
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 19.063,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 20.387,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 20.828,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 21.269,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 21.711,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 22.152,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 22.593,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 25.24,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 25.681,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 26.122,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 26.563,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 27.005,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 27.887,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 28.328,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 28.769,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 29.652,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 30.534,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 31.858,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 32.299,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 32.74,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 33.622,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 34.505,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 34.946,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 36.269,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 36.711,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 37.152,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 37.593,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 38.475,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 40.24,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 40.681,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        },
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 42.887,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        },
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 43.328,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        },
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 43.769,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 44.211,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 45.093,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 45.534,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 45.975,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 46.196,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 46.858,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 47.299,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 48.622,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        },
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 48.843,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 49.063,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 49.505,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 49.725,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 49.946,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 50.166,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 50.387,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 50.828,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 51.269,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        },
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 51.49,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 52.152,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 53.034,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 54.358,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 54.799,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        },
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 55.24,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 55.681,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "DOWN"
+        }
+      ]
+    },
+    {
+      "time": 56.122,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "X"
+        }
+      ]
+    },
+    {
+      "time": 57.005,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "UP"
+        }
+      ]
+    },
+    {
+      "time": 57.446,
+      "notes": [
+        {
+          "lane": 0,
+          "button": "Z"
+        }
+      ]
+    },
+    {
+      "time": 58.769,
+      "notes": [
+        {
+          "lane": 1,
+          "button": "DOWN"
+        }
+      ]
+    }
+  ]
+}
